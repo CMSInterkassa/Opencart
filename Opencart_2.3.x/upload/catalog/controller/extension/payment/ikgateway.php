@@ -13,44 +13,49 @@
 class ControllerExtensionPaymentIkgateway extends Controller {
     private $order;
     private $log;
+    private $key;
     private $shoputils = 2907;
     private static $LOG_OFF = 0;
     private static $LOG_SHORT = 1;
     private static $LOG_FULL = 2;
 
-    public function __construct($registry)
-    {
-        parent::__construct($registry);
-        $this->language->load('extension/payment/ikgateway');
-    }
 
     public function index()
     {
+        $this->language->load('extension/payment/ikgateway');
+        $this->load->model('checkout/order');
+
         $data['text_confirm_title'] = $this->language->get('text_confirm_title');
         $data['button_confirm'] = $this->language->get('button_confirm');
         $data['continue'] = $this->url->link('checkout/success', '', 'SSL');
-
-        $this->load->model('checkout/order');
+        
         $order_info = $this->model_checkout_order->getOrder($this->session->data['order_id']);
 
-        $ik_payment_amount = number_format($this->currency->format($order_info['total'], $this->config->get('ikgateway_currency'), $this->currency->getValue($this->config->get('ikgateway_currency')), FALSE), 2, '.', '');
-        $ik_payment_id = $this->session->data['order_id'];
-        $ik_payment_desc = sprintf($this->language->get('text_ik_payment_desc'), $this->session->data['order_id']);
-        $ik_shop_id = $this->config->get('ikgateway_shop_id');
-        $ik_cur = $this->config->get('ikgateway_currency');
+        $this->key = $this->config->get('ikgateway_sign_hash');
+
+        $ik_option = array(
+            'ik_am' => number_format($this->currency->format($order_info['total'], $this->config->get('ikgateway_currency'), $this->currency->getValue($this->config->get('ikgateway_currency')), FALSE), 2, '.', ''),
+            'ik_pm_no' => $this->session->data['order_id'],
+            'ik_desc' => "#".$this->session->data['order_id'],
+            'ik_co_id' => $this->config->get('ikgateway_shop_id'),
+            'ik_cur' => $this->config->get('ikgateway_currency')
+        );
 
         $data['action'] = 'https://sci.interkassa.com';
-        $data['ik_shop_id'] = $ik_shop_id;
-        $data['ik_payment_amount'] = $ik_payment_amount;
-        $data['ik_payment_id'] = $ik_payment_id;
-        $data['ik_cur'] = $ik_cur;
-        $data['ik_payment_desc'] = $ik_payment_desc;
-        $data['ik_sign_hash'] = base64_encode(md5($ik_payment_amount . ':' .
-            $ik_shop_id . ':' .
-            $ik_cur . ':' .
-            $ik_payment_desc . ':' .
-            $ik_payment_id . ':' .
-            $this->config->get('ikgateway_sign_hash'), true));
+
+        $data['ik_co_id'] = $ik_option['ik_co_id'];
+        $data['ik_am'] = $ik_option['ik_am'];
+        $data['ik_pm_no'] = $ik_option['ik_pm_no'];
+        $data['ik_cur'] = $ik_option['ik_cur'];
+        $data['ik_desc'] = $ik_option['ik_desc'];
+        
+        ksort($ik_option, SORT_STRING);
+        array_push($ik_option, $this->key);
+        $ik_sign = implode(':', $ik_option);
+        
+        $data['ik_sign'] = base64_encode(md5($ik_sign, true));
+
+        unset($ik_option);
 
         $this->id = 'payment';
         
@@ -79,18 +84,16 @@ class ControllerExtensionPaymentIkgateway extends Controller {
                 $this->model_checkout_order->update($this->order['order_id'],
                     $this->config->get('ikgateway_order_status_id'),
                     sprintf($this->language->get('text_comment'),
-                        $this->request->post['ik_pw_via'],  //ik_paysystem_alias
-                        $this->request->post['ik_am']  //ik_payment_amount
-                        //$this->request->post['???'] //ik_trans_id
+                        $this->request->post['ik_pw_via'],  
+                        $this->request->post['ik_am']
                     ),
                     true);
             } else {
                 $this->model_checkout_order->confirm($this->order['order_id'],
                     $this->config->get('ikgateway_order_status_id'),
                     sprintf($this->language->get('text_comment'),
-                        $this->request->post['ik_pw_via'],  //ik_paysystem_alias
-                        $this->request->post['ik_am']  //ik_payment_amount
-                        //$this->request->post['???'] //ik_trans_id
+                        $this->request->post['ik_pw_via'], 
+                        $this->request->post['ik_am']
                     ));
             }
 
@@ -126,37 +129,39 @@ class ControllerExtensionPaymentIkgateway extends Controller {
 
     private function validate($check_sign_hash = true)
     {
-        $this->load->model('checkout/order');
+        if(!$this->checkIP()){return false;}
 
-        if ($this->request->server['REQUEST_METHOD'] != 'POST') {
-            $this->sendForbidden($this->language->get('text_error_post'));
-            return false;
-        }
+            $this->load->model('checkout/order');
 
-        if ($check_sign_hash && isset($sign_ik)) {
-            $ik_sign_hash_array = $this->request->post;
-            unset($ik_sign_hash_array['ik_sign']);
-            ksort($ik_sign_hash_array, SORT_STRING);
-            array_push($ik_sign_hash_array, $this->config->get('ikgateway_test_mode') ? $this->config->get('ikgateway_sign_test_key') : $this->config->get('ikgateway_sign_hash')); //$this->config->get('ikgateway_sign_hash');
-            $ik_sign_hash_string = implode(':', $ik_sign_hash_array);
-            $ik_sign_hash = base64_encode(md5($ik_sign_hash_string, true));
-            if ($this->request->post['ik_sign'] != $ik_sign_hash) {  //ik_sign_hash
-                $this->sendForbidden($this->language->get('text_error_ik_sign_hash'));
-
-                $this->logWrite($ik_sign_hash . '=md5(' . $ik_sign_hash_string . ')', self::$LOG_SHORT);
-
+            if ($this->request->server['REQUEST_METHOD'] != 'POST') {
+                $this->sendForbidden($this->language->get('text_error_post'));
                 return false;
             }
-        }
 
-        $this->order = $this->model_checkout_order->getOrder($this->request->post['ik_pm_no']); //ik_payment_id
+            if ($check_sign_hash && isset($sign_ik)) {
+                $ik_sign_hash_array = $this->request->post;
+                unset($ik_sign_hash_array['ik_sign']);
+                ksort($ik_sign_hash_array, SORT_STRING);
+                array_push($ik_sign_hash_array, $this->config->get('ikgateway_test_mode') ? $this->config->get('ikgateway_sign_test_key') : $this->config->get('ikgateway_sign_hash')); //$this->config->get('ikgateway_sign_hash');
+                $ik_sign_hash_string = implode(':', $ik_sign_hash_array);
+                $ik_sign_hash = base64_encode(md5($ik_sign_hash_string, true));
+                if ($this->request->post['ik_sign'] != $ik_sign_hash) {  //ik_sign_hash
+                    $this->sendForbidden($this->language->get('text_error_ik_sign_hash'));
 
-        if (!$this->order) {
-            $this->sendForbidden(sprintf($this->language->get('text_error_order_not_found'), $this->request->post['ik_pm_no']));  //ik_payment_id
-            return false;
-        }
+                    $this->logWrite($ik_sign_hash . '=md5(' . $ik_sign_hash_string . ')', self::$LOG_SHORT);
 
-        return true;
+                    return false;
+                }
+            }
+
+            $this->order = $this->model_checkout_order->getOrder($this->request->post['ik_pm_no']); //ik_payment_id
+
+            if (!$this->order) {
+                $this->sendForbidden(sprintf($this->language->get('text_error_order_not_found'), $this->request->post['ik_pm_no']));  //ik_payment_id
+                return false;
+            }
+
+            return true;       
     }
 
     public function view()
@@ -204,6 +209,18 @@ class ControllerExtensionPaymentIkgateway extends Controller {
             $this->log = new Log('ikgateway.log');
         }
         $this->log->Write($message);
+    }
+
+    public function checkIP(){
+        $ip_stack = array(
+            'ip_begin'=>'151.80.190.97',
+            'ip_end'=>'151.80.190.104'
+        );
+
+        if(!ip2long($_SERVER['REMOTE_ADDR'])>=ip2long($ip_stack['ip_begin']) && !ip2long($_SERVER['REMOTE_ADDR'])<=ip2long($ip_stack['ip_end'])){
+            return false;
+        }
+        return true;
     }
 }
 ?>
