@@ -10,217 +10,300 @@
  *  версий Opencart.
  * =================================================================
 */
+
 class ControllerExtensionPaymentIkgateway extends Controller {
-    private $order;
-    private $log;
-    private $key;
-    private $shoputils = 2907;
-    private static $LOG_OFF = 0;
-    private static $LOG_SHORT = 1;
-    private static $LOG_FULL = 2;
+    const MAX_LAST_LOG_LINES = 500;
+    private $error = array();
 
+    public function index() {
+        $this->load->language('extension/payment/ikgateway');
 
-    public function index()
-    {
-        $this->language->load('extension/payment/ikgateway');
-        $this->load->model('checkout/order');
+        $this->document->setTitle($this->language->get('heading_title'));
 
-        $data['text_confirm_title'] = $this->language->get('text_confirm_title');
-        $data['button_confirm'] = $this->language->get('button_confirm');
-        $data['continue'] = $this->url->link('checkout/success', '', 'SSL');
-        
-        $order_info = $this->model_checkout_order->getOrder($this->session->data['order_id']);
+        $this->load->model('setting/setting');
 
-        $this->key = $this->config->get('ikgateway_sign_hash');
+        if (($this->request->server['REQUEST_METHOD'] == 'POST') && ($this->validate())) {
+            $this->load->model('setting/setting');
 
-        $ik_option = array(
-            'ik_am' => number_format($this->currency->format($order_info['total'], $this->config->get('ikgateway_currency'), $this->currency->getValue($this->config->get('ikgateway_currency')), FALSE), 2, '.', ''),
-            'ik_pm_no' => $this->session->data['order_id'],
-            'ik_desc' => "#".$this->session->data['order_id'],
-            'ik_co_id' => $this->config->get('ikgateway_shop_id'),
-            'ik_cur' => $this->config->get('ikgateway_currency')
-        );
+            $this->model_setting_setting->editSetting('ikgateway', $this->request->post);
 
-        $data['action'] = 'https://sci.interkassa.com';
+            $this->session->data['success'] = $this->language->get('text_success');
 
-        $data['ik_co_id'] = $ik_option['ik_co_id'];
-        $data['ik_am'] = $ik_option['ik_am'];
-        $data['ik_pm_no'] = $ik_option['ik_pm_no'];
-        $data['ik_cur'] = $ik_option['ik_cur'];
-        $data['ik_desc'] = $ik_option['ik_desc'];
-        
-        ksort($ik_option, SORT_STRING);
-        array_push($ik_option, $this->key);
-        $ik_sign = implode(':', $ik_option);
-        
-        $data['ik_sign'] = base64_encode(md5($ik_sign, true));
-
-        unset($ik_option);
-
-        $this->id = 'payment';
-        
-        if (file_exists(DIR_TEMPLATE . $this->config->get('config_template') . '/template/extension/payment/ikgateway.tpl'))
-        {
-            return $this->load->view($this->config->get('config_template') . '/template/extension/payment/ikgateway.tpl', $data);
-        }
-        else
-        {
-            return $this->load->view('extension/payment/ikgateway.tpl', $data);
-        }
-    }
-
-    public function status()
-    {
-        $this->logWrite('StatusURL: ', self::$LOG_FULL);
-        $this->logWrite('  POST:' . var_export($this->request->post, true), self::$LOG_FULL);
-        $this->logWrite('  GET:' . var_export($this->request->get, true), self::$LOG_FULL);
-
-        if (!$this->validate(true)) {
-            return;
+            $this->response->redirect($this->makeUrl('extension/payment'));
         }
 
-        if ($this->request->post['ik_inv_st']) { //ik_payment_state
-            if ($this->order['order_status_id']){
-                $this->model_checkout_order->update($this->order['order_id'],
-                    $this->config->get('ikgateway_order_status_id'),
-                    sprintf($this->language->get('text_comment'),
-                        $this->request->post['ik_pw_via'],  
-                        $this->request->post['ik_am']
-                    ),
-                    true);
-            } else {
-                $this->model_checkout_order->confirm($this->order['order_id'],
-                    $this->config->get('ikgateway_order_status_id'),
-                    sprintf($this->language->get('text_comment'),
-                        $this->request->post['ik_pw_via'], 
-                        $this->request->post['ik_am']
-                    ));
-            }
+        $data['heading_title'] = $this->language->get('heading_title');
+        $data['button_save'] = $this->language->get('button_save');
+        $data['button_cancel'] = $this->language->get('button_cancel');
+        $data['entry_geo_zone'] = $this->language->get('entry_geo_zone');
+        $data['entry_status'] = $this->language->get('entry_status');
+        $data['entry_sort_order'] = $this->language->get('entry_sort_order');
+        $data['entry_order_status'] = $this->language->get('entry_order_status');
+        $data['entry_ik_log'] = $this->language->get('entry_ik_log');
+        $data['entry_ik_log_help'] = $this->language->get('entry_ik_log_help');
+        $data['entry_ik_shop_id'] = $this->language->get('entry_ik_shop_id');
+        $data['entry_ik_shop_id_help'] = $this->language->get('entry_ik_shop_id_help');
+        $data['entry_ik_sign_hash'] = $this->language->get('entry_ik_sign_hash');
+        $data['entry_ik_sign_hash_help'] = $this->language->get('entry_ik_sign_hash_help');
+        $data['entry_ik_sign_test_key'] = $this->language->get('entry_ik_sign_test_key');
+        $data['entry_ik_sign_test_key_help'] = $this->language->get('entry_ik_sign_test_key_help');
+        $data['entry_ik_currency'] = $this->language->get('entry_ik_currency');
+        $data['entry_ik_currency_help'] = $this->language->get('entry_ik_currency_help');
+        $data['entry_ik_test_mode'] = $this->language->get('entry_ik_test_mode');
+        $data['entry_ik_test_mode_help'] = $this->language->get('entry_ik_test_mode_help');
+        $data['entry_ik_success_url'] = $this->language->get('entry_ik_success_url');
+        $data['entry_ik_fail_url'] = $this->language->get('entry_ik_fail_url');
+        $data['entry_ik_pending_url'] = $this->language->get('entry_ik_pending_url');
+        $data['entry_ik_status_url'] = $this->language->get('entry_ik_status_url');
+        $data['tab_general'] = $this->language->get('tab_general');
+        $data['tab_log'] = $this->language->get('tab_log');
+        $data['text_edit'] = $this->language->get('text_edit');
+        $data['text_enabled'] = $this->language->get('text_enabled');
+        $data['text_disabled'] = $this->language->get('text_disabled');
+        $data['text_all_zones'] = $this->language->get('text_all_zones');
+        $data['text_yes'] = $this->language->get('text_yes');
+        $data['text_no'] = $this->language->get('text_no');
+        $data['text_ik_urls'] = $this->language->get('text_ik_urls');
+        $data['text_ik_parameters'] = $this->language->get('text_ik_parameters');
+        $data['entry_log_file'] = $this->language->get('entry_log_file');
+        $data['entry_log_file_help']       = sprintf($this->language->get('entry_log_file_help'), self::MAX_LAST_LOG_LINES);
+        $data['action']                    = $this->makeUrl('extension/payment/ikgateway');
+        $data['cancel']                    = $this->makeUrl('extension/payment');
+        $data['ikgateway_success_url']  = HTTP_CATALOG . 'index.php?route=extension/payment/ikgateway/success';
+        $data['ikgateway_fail_url']     = HTTP_CATALOG . 'index.php?route=extension/payment/ikgateway/fail';
+        $data['ikgateway_pending_url']  = HTTP_CATALOG . 'index.php?route=extension/payment/ikgateway/success';
+        $data['ikgateway_status_url']   = HTTP_CATALOG . 'index.php?route=extension/payment/ikgateway/status';
+        $data['log_lines']                 = $this->readLastLines(DIR_LOGS . 'ikgateway.log', self::MAX_LAST_LOG_LINES);
 
-        }
-        $this->sendOk();
-    }
-
-    public function success()
-    {
-        $this->logWrite('SuccessURL', self::$LOG_FULL);
-        $this->logWrite('  POST:' . var_export($this->request->post, true), self::$LOG_FULL);
-        $this->logWrite('  GET:' . var_export($this->request->get, true), self::$LOG_FULL);
-
-        if ($this->validate(false)) {
-            $this->load->model('checkout/order');
-
-            $this->model_checkout_order->addOrderHistory($this->session->data['order_id'], $this->config->get('ikgateway_order_status_id'));
-            $this->response->redirect($this->url->link('checkout/success', '', 'SSL'));
+        if (isset($this->error['warning'])) {
+            $data['error_warning'] = $this->error['warning'];
         } else {
-            $this->response->redirect($this->url->link('checkout/checkout', '', 'SSL'));
-        }
-        return true;
-    }
-
-    public function fail()
-    {
-        $this->logWrite('FailURL', self::$LOG_FULL);
-        $this->logWrite('  POST:' . var_export($this->request->post, true), self::$LOG_FULL);
-        $this->logWrite('  GET:' . var_export($this->request->get, true), self::$LOG_FULL);
-        $this->response->redirect($this->url->link('checkout/checkout', '', 'SSL'));
-        return true;
-    }
-
-    private function validate($check_sign_hash = true)
-    {
-        if(!$this->checkIP()){return false;}
-
-            $this->load->model('checkout/order');
-
-            if ($this->request->server['REQUEST_METHOD'] != 'POST') {
-                $this->sendForbidden($this->language->get('text_error_post'));
-                return false;
-            }
-
-            if ($check_sign_hash && isset($sign_ik)) {
-                $ik_sign_hash_array = $this->request->post;
-                unset($ik_sign_hash_array['ik_sign']);
-                ksort($ik_sign_hash_array, SORT_STRING);
-                array_push($ik_sign_hash_array, $this->config->get('ikgateway_test_mode') ? $this->config->get('ikgateway_sign_test_key') : $this->config->get('ikgateway_sign_hash')); //$this->config->get('ikgateway_sign_hash');
-                $ik_sign_hash_string = implode(':', $ik_sign_hash_array);
-                $ik_sign_hash = base64_encode(md5($ik_sign_hash_string, true));
-                if ($this->request->post['ik_sign'] != $ik_sign_hash) {  //ik_sign_hash
-                    $this->sendForbidden($this->language->get('text_error_ik_sign_hash'));
-
-                    $this->logWrite($ik_sign_hash . '=md5(' . $ik_sign_hash_string . ')', self::$LOG_SHORT);
-
-                    return false;
-                }
-            }
-
-            $this->order = $this->model_checkout_order->getOrder($this->request->post['ik_pm_no']); //ik_payment_id
-
-            if (!$this->order) {
-                $this->sendForbidden(sprintf($this->language->get('text_error_order_not_found'), $this->request->post['ik_pm_no']));  //ik_payment_id
-                return false;
-            }
-
-            return true;       
-    }
-
-    public function view()
-    {
-        echo $this->shoputils;
-    }
-
-    private function sendForbidden($error)
-    {
-        $this->logWrite('ERROR: ' . $error, self::$LOG_SHORT);
-
-        header('HTTP/1.1 403 Forbidden');
-
-        echo "<html>
-                <head>
-                   <title>403 Forbidden</title>
-                </head>
-                <body>
-                    <p>$error.</p>
-                </body>
-        </html>";
-    }
-
-    private function sendOk()
-    {
-        $this->logWrite('OK: ' . http_build_query($this->request->post, '', ','), self::$LOG_SHORT);
-
-        header('HTTP/1.1 200 OK');
-
-        echo "<html><head><title>200 OK</title></head></html>";
-    }
-
-    private function logWrite($message, $type)
-    {
-        switch ($this->config->get('ikgateway_log')) {
-            case self::$LOG_OFF:
-                return;
-            case self::$LOG_SHORT:
-                if ($type == self::$LOG_FULL) {
-                    return;
-                }
+            $data['error_warning'] = '';
         }
 
-        if (!$this->log) {
-            $this->log = new Log('ikgateway.log');
+        if (isset($this->error['ik_shop_id'])) {
+            $data['error_ik_shop_id'] = $this->error['ik_shop_id'];
+        } else {
+            $data['error_ik_shop_id'] = '';
         }
-        $this->log->Write($message);
-    }
 
-    public function checkIP(){
-        $ip_stack = array(
-            'ip_begin'=>'151.80.190.97',
-            'ip_end'=>'151.80.190.104'
+        if (isset($this->error['ik_sign_hash'])) {
+            $data['error_ik_sign_hash'] = $this->error['ik_sign_hash'];
+        } else {
+            $data['error_ik_sign_hash'] = '';
+        }
+
+        if (isset($this->error['ik_sign_test_key'])) {
+            $data['error_ik_sign_test_key'] = $this->error['ik_sign_test_key'];
+        } else {
+            $data['error_ik_sign_test_key'] = '';
+        }
+
+        $data['breadcrumbs'] = array();
+
+        $data['breadcrumbs'][] = array(
+            'href'      => $this->makeUrl('common/home'),
+            'text'      => $this->language->get('text_home'),
+            'separator' => FALSE
         );
 
-        if(!ip2long($_SERVER['REMOTE_ADDR'])>=ip2long($ip_stack['ip_begin']) && !ip2long($_SERVER['REMOTE_ADDR'])<=ip2long($ip_stack['ip_end'])){
-            return false;
+        $data['breadcrumbs'][] = array(
+            'href'      => $this->makeUrl('extension/payment'),
+            'text'      => $this->language->get('text_payment'),
+            'separator' => ' :: '
+        );
+
+        $data['breadcrumbs'][] = array(
+            'href'      => $this->makeUrl('extension/payment/ikgateway'),
+            'text'      => $this->language->get('heading_title'),
+            'separator' => ' :: '
+        );
+
+        //переопределяю некотр. перемен., не работает метод _updateData:(
+        if (isset($this->request->post['ikgateway_sort_order'])) {
+            $data['ikgateway_sort_order'] = $this->request->post['ikgateway_sort_order'];
+        } elseif($this->config->get('ikgateway_sort_order')) {
+            $data['ikgateway_sort_order'] = $this->config->get('ikgateway_sort_order');
+        } else {
+            $data['ikgateway_sort_order'] = "0";
         }
-        return true;
+
+        if (isset($this->request->post['ikgateway_shop_id'])) {
+            $data['ikgateway_shop_id'] = $this->request->post['ikgateway_shop_id'];
+        } elseif($this->config->get('ikgateway_shop_id')) {
+            $data['ikgateway_shop_id'] = $this->config->get('ikgateway_shop_id');
+        } else {
+            $data['ikgateway_shop_id']= "";
+        }
+
+        if (isset($this->request->post['ikgateway_sign_hash'])) {
+            $data['ikgateway_sign_hash'] = $this->request->post['ikgateway_sign_hash'];
+        } elseif($this->config->get('ikgateway_sign_hash')) {
+            $data['ikgateway_sign_hash'] = $this->config->get('ikgateway_sign_hash');
+        } else {
+            $data['ikgateway_sign_hash']= "";
+        }
+
+        if (isset($this->request->post['ikgateway_sign_test_key'])) {
+            $data['ikgateway_sign_test_key'] = $this->request->post['ikgateway_sign_test_key'];
+        } elseif($this->config->get('ikgateway_sign_test_key')) {
+            $data['ikgateway_sign_test_key'] = $this->config->get('ikgateway_sign_test_key');
+        } else {
+            $data['ikgateway_sign_test_key']= "";
+        }
+
+        if (isset($this->request->post['ikgateway_currency'])) {
+            $data['ikgateway_currency'] = $this->request->post['ikgateway_currency'];
+        } elseif($this->config->get('ikgateway_currency')) {
+            $data['ikgateway_currency'] = $this->config->get('ikgateway_currency');
+        } else {
+            $data['ikgateway_currency']= "";
+        }
+
+        if (isset($this->request->post['ikgateway_test_mode'])) {
+            $data['ikgateway_test_mode'] = $this->request->post['ikgateway_test_mode'];
+        } elseif($this->config->get('ikgateway_test_mode')) {
+            $data['ikgateway_test_mode'] = $this->config->get('ikgateway_test_mode');
+        } else {
+            $data['ikgateway_test_mode']= "";
+        }
+
+        if (isset($this->request->post['ikgateway_order_status_id'])) {
+            $data['ikgateway_order_status_id'] = $this->request->post['ikgateway_order_status_id'];
+        } elseif($this->config->get('ikgateway_order_status_id')) {
+            $data['ikgateway_order_status_id'] = $this->config->get('ikgateway_order_status_id');
+        } else {
+            $data['ikgateway_order_status_id']= "";
+        }
+
+        if (isset($this->request->post['ikgateway_geo_zone_id'])) {
+            $data['ikgateway_geo_zone_id'] = $this->request->post['ikgateway_geo_zone_id'];
+        } elseif($this->config->get('ikgateway_geo_zone_id')) {
+            $data['ikgateway_geo_zone_id'] = $this->config->get('ikgateway_geo_zone_id');
+        } else {
+            $data['ikgateway_geo_zone_id']= "";
+        }
+
+        if (isset($this->request->post['ikgateway_status'])) {
+            $data['ikgateway_status'] = $this->request->post['ikgateway_status'];
+        } elseif($this->config->get('ikgateway_status')) {
+            $data['ikgateway_status'] = $this->config->get('ikgateway_status');
+        } else {
+            $data['ikgateway_status']= "";
+        }
+
+        if (isset($this->request->post['ikgateway_log'])) {
+            $data['ikgateway_log'] = $this->request->post['ikgateway_log'];
+        } elseif($this->config->get('ikgateway_log')) {
+            $data['ikgateway_log'] = $this->config->get('ikgateway_log');
+        } else {
+            $data['ikgateway_log']= "";
+        }
+
+        //конец переопределения
+
+        $data['logs'] = array(
+            '0' => $this->language->get('text_ik_log_off'),
+            '1' => $this->language->get('text_ik_log_short'),
+            '2' => $this->language->get('text_ik_log_full'),
+        );
+
+        $this->load->model('localisation/order_status');
+        $data['order_statuses'] = array_merge(
+            array(0 => array(
+                'name' => $this->language->get('text_order_status_cart')
+            )),
+            $this->model_localisation_order_status->getOrderStatuses()
+        );
+
+        $this->load->model('localisation/geo_zone');
+        $data['geo_zones'] = $this->model_localisation_geo_zone->getGeoZones();
+
+        $this->load->model('setting/store');
+        $stores = $this->model_setting_store->getStores();
+        foreach ($stores as $store){
+            $data['stores'][] = $store['url'];
+        }
+        $data['stores'][] = $this->config->get('config_url');
+
+        $this->load->model('localisation/currency');
+
+        $data['currencies'] = $this->model_localisation_currency->getCurrencies();
+
+        $data['header'] = $this->load->controller('common/header');
+        $data['column_left'] = $this->load->controller('common/column_left');
+        $data['footer'] = $this->load->controller('common/footer');
+
+        $this->response->setOutput($this->load->view('extension/payment/ikgateway.tpl', $data));
+    }
+
+    private function validate() {
+        if (!$this->user->hasPermission('modify', 'extension/payment/ikgateway')) {
+            $this->error['warning'] = $this->language->get('error_permission');
+        } else {
+            if (!isset($this->request->post['ikgateway_sign_hash']) || !$this->request->post['ikgateway_sign_hash']) {
+                $this->error['warning'] = $this->language->get('error_ik_sign_hash');
+            }
+            if (!isset($this->request->post['ikgateway_sign_test_key']) || !$this->request->post['ikgateway_sign_test_key']) {
+                $this->error['warning'] = $this->language->get('error_ik_sign_test_key');
+            }
+            if (!isset($this->request->post['ikgateway_shop_id']) || !$this->request->post['ikgateway_shop_id']) {
+                $this->error['warning'] = $this->language->get('error_ik_shop_id');
+            }
+        }
+
+        if (!$this->error) {
+            return TRUE;
+        } else {
+            return FALSE;
+        }
+    }
+
+    private function readLastLines($filename, $lines) {
+        if (!is_file($filename)) {
+            return array();
+        }
+        $handle = @fopen($filename, "r");
+        if (!$handle) {
+            return array();
+        }
+        $linecounter = $lines;
+        $pos = -1;
+        $beginning = false;
+        $text = array();
+
+        while ($linecounter > 0) {
+            $t = " ";
+
+            while ($t != "\n") {
+                /* if fseek() returns -1 we need to break the cycle*/
+                if (fseek($handle, $pos, SEEK_END) == -1) {
+                    $beginning = true;
+                    break;
+                }
+                $t = fgetc($handle);
+                $pos--;
+            }
+
+            $linecounter--;
+
+            if ($beginning) {
+                rewind($handle);
+            }
+
+            $text[$lines - $linecounter - 1] = fgets($handle);
+
+            if ($beginning) {
+                break;
+            }
+        }
+        fclose($handle);
+
+        return array_reverse($text);
+    }
+
+    function makeUrl($route, $url = '')
+    {
+        return str_replace('&amp;', '&', $this->url->link($route, $url.'&token=' . $this->session->data['token'], 'SSL'));
     }
 }
-?>
