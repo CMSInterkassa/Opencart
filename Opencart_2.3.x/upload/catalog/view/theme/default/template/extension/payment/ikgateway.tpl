@@ -12,12 +12,12 @@
 */
 ?>
 <form action="<?php echo $action ?>" method="post" id="checkout">
-    <input type="hidden" name="ik_am" value="<?php echo $ik_payment_amount; ?>"/>
-    <input type="hidden" name="ik_co_id" value="<?php echo $ik_shop_id; ?>"/>
+    <input type="hidden" name="ik_am" value="<?php echo $ik_am; ?>"/>
+    <input type="hidden" name="ik_co_id" value="<?php echo $ik_co_id; ?>"/>
     <input type="hidden" name="ik_cur" value="<?php echo $ik_cur; ?>" />
-    <input type="hidden" name="ik_desc" value="<?php echo $ik_payment_desc; ?>"/>
-    <input type="hidden" name="ik_pm_no" value="<?php echo $ik_payment_id; ?>"/>
-    <input type="hidden" name="ik_sign" value="<?php echo $ik_sign_hash; ?>"/>
+    <input type="hidden" name="ik_desc" value="<?php echo $ik_desc; ?>"/>
+    <input type="hidden" name="ik_pm_no" value="<?php echo $ik_pm_no; ?>"/>
+    <input type="hidden" name="ik_sign" value="<?php echo $ik_sign; ?>"/>
 
 </form>
 <div class="buttons">
