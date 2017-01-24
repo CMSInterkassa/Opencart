@@ -18,7 +18,8 @@ $_['tab_log']                     = 'Журнал';
 // Text 
 $_['text_payment']                = 'Оплата';
 $_['text_success']                = 'Настройки модуля обновлены!';
-$_['text_shoputils_ik']           = '<a onclick="window.open(\'http://www.interkassa.com/\');"><img src="../image/extension/payment/shoputils_ik.jpg" alt="Interkassa.com" title="Interkassa.com"/></a>';
+$_['text_ikgateway']           = '<a onclick="window.open(\'http://www.interkassa.com/\');"><img src=".
+./image/extension/payment/ikgetaway/ikgetaway.jpg" alt="Interkassa.com" title="Interkassa.com"/></a>';
 $_['text_order_status_cart']      = 'Корзина';
 $_['text_ik_log_off']             = 'Выключен';
 $_['text_ik_log_short']           = 'Частичный (Только результары операций)';
@@ -62,4 +63,19 @@ $_['error_permission']            = 'У Вас нет прав для управ
 $_['error_ik_shop_id']            = 'Необходимо заполнить поле "Идентификатор кассы"!';
 $_['error_ik_sign_hash']          = 'Необходимо заполнить поле "Секретный ключ"!';
 $_['error_ik_sign_test_key']      = 'Необходимо заполнить поле "Тестовый ключ"!';
+
+
+
+//API ID
+$_['new_feature_api'] = 'Now you have an opportunity to use our API and allow customers choose payment system on checkoout page';
+$_['entry_ik_api_help']      = 'Located in your purse settings , tab API';
+
+$_['entry_ik_api_id']      = 'API id';
+$_['error_ik_api_id']      = 'To use new API fill the API id';
+
+$_['entry_ik_api_key']      = 'API Key';
+$_['error_ik_api_key']      = 'To use new API fill the API key';
+
+$_['entry_api_status']      = 'API status'
+
 ?>

@@ -22,4 +22,8 @@ $_['text_description'] = 'Возможные методы оплаты: <br/><a 
 $_['text_error_post'] = 'Ответ от шлюза не типа POST';
 $_['text_error_ik_sign_hash'] = 'Некорректная подпись сообщения от платёжного шлюза';
 $_['text_error_order_not_found'] = 'Заказ № "%s" не найден';
+$_['text_select_payment_method'] = 'Выберите удобный для вас метод оплаты';
+$_['text_select_currency'] = 'Выберите валюту(UAH,RUB,USD,EUR)';
+$_['text_press_pay'] = 'Нажмите "Оплатить"';
+$_['pay_via'] = 'Оплатить с';
 ?>

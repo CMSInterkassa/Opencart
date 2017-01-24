@@ -91,6 +91,24 @@
                                            size="1"/>
                                 </div>
                             </div>
+
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label" for="ikgateway_currency">
+                                    <span data-toggle="tooltip" title="" data-original-title="<?php echo $entry_ik_currency_help; ?>"><?php echo $entry_ik_currency; ?></span>
+                                </label>
+                                <div class="col-sm-10"><select class="form-control" id="ikgateway_currency" name="ikgateway_currency">
+                                        <?php foreach ($currencies as $currency) { ?>
+                                        <?php if ($currency['code'] == $ikgateway_currency) { ?>
+                                        <option value="<?php echo $currency['code']; ?>"
+                                                selected="selected"><?php echo $currency['title']; ?></option>
+                                        <?php } else { ?>
+                                        <option value="<?php echo $currency['code']; ?>"><?php echo $currency['title']; ?></option>
+                                        <?php } ?>
+                                        <?php } ?>
+                                    </select></div>
+                            </div>
+
+
                             <div class="form-group">
                                 <div class="col-sm-12"><strong><?php echo $text_ik_parameters; ?></strong></div>
                             </div>
@@ -121,6 +139,7 @@
                                     <span class="error"><?php echo $error_ik_sign_test_key; ?></span>
                                     <?php } ?></div>
                             </div>
+
                             <div class="form-group">
                                 <label class="col-sm-2 control-label" for="ikgateway_test_mode">
                                     <span data-toggle="tooltip" title="" data-original-title="<?php echo $entry_ik_test_mode_help; ?>"><?php echo $entry_ik_test_mode ?></span>
@@ -137,41 +156,83 @@
                                     <?php echo $text_no; ?>
                                     <?php } ?></div>
                             </div>
+
+
+
                             <div class="form-group">
-                                <label class="col-sm-2 control-label" for="ikgateway_currency">
-                                    <span data-toggle="tooltip" title="" data-original-title="<?php echo $entry_ik_currency_help; ?>"><?php echo $entry_ik_currency; ?></span>
+                                <div class="col-sm-12"><strong><?php echo $new_feature_api; ?></strong></div>
+                            </div>
+                            <div class="form-group required">
+                                <label class="col-sm-2 control-label required" for="ikgateway_api_id">
+                                    <span data-toggle="tooltip" title="" data-original-title="<?php echo $entry_ik_api_help; ?>">
+                                        <?php echo $entry_ik_api_id ?>
+                                    </span>
                                 </label>
-                                <div class="col-sm-10"><select class="form-control" id="ikgateway_currency" name="ikgateway_currency">
-                                        <?php foreach ($currencies as $currency) { ?>
-                                        <?php if ($currency['code'] == $ikgateway_currency) { ?>
-                                        <option value="<?php echo $currency['code']; ?>"
-                                                selected="selected"><?php echo $currency['title']; ?></option>
+                                <div class="col-sm-10">
+                                    <input type="text" id="ikgateway_api_id" class="form-control" name="ikgateway_api_id"
+                                           value="<?php echo $ikgateway_api_id; ?>"/>
+                                    <?php if ($error_ik_api_id) { ?>
+                                    <span class="error"><?php echo $error_ik_api_id; ?></span>
+                                    <?php } ?></div>
+                            </div>
+
+                            <div class="form-group required">
+                                <label class="col-sm-2 control-label required" for="ikgateway_api_key">
+                                    <span data-toggle="tooltip" title="" data-original-title="<?php echo $entry_ik_api_help; ?>">
+                                        <?php echo $entry_ik_api_key ?>
+                                    </span>
+                                </label>
+                                <div class="col-sm-10">
+                                    <input type="text" id="ikgateway_api_key" class="form-control" name="ikgateway_api_key"
+                                           value="<?php echo $ikgateway_api_key; ?>"/>
+                                    <?php if ($error_ik_api_key) { ?>
+                                    <span class="error"><?php echo $error_ik_api_key; ?></span>
+                                    <?php } ?></div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label" for="ikgateway_api_status"><?php echo $entry_api_status; ?></label>
+                                <div class="col-sm-10"><select class="form-control" id="ikgateway_api_status" name="ikgateway_api_status">
+                                        <?php if ($ikgateway_api_status) { ?>
+                                        <option value="1" selected="selected"><?php echo $text_enabled; ?></option>
+                                        <option value="0"><?php echo $text_disabled; ?></option>
                                         <?php } else { ?>
-                                        <option value="<?php echo $currency['code']; ?>"><?php echo $currency['title']; ?></option>
-                                        <?php } ?>
+                                        <option value="1"><?php echo $text_enabled; ?></option>
+                                        <option value="0" selected="selected"><?php echo $text_disabled; ?></option>
                                         <?php } ?>
                                     </select></div>
                             </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                             <div class="form-group">
                                 <div class="col-sm-12">
                                     <div class="help"><?php echo $text_ik_urls ?></div>
                                 </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-sm-2 control-label"><?php echo $entry_ik_success_url; ?></label>
-                                <div class="col-sm-10"><?php echo $ikgateway_success_url; ?></div>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-sm-2 control-label"><?php echo $entry_ik_fail_url; ?></label>
-                                <div class="col-sm-10"><?php echo $ikgateway_fail_url; ?></div>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-sm-2 control-label"><?php echo $entry_ik_pending_url; ?></label>
-                                <div class="col-sm-10"><?php echo $ikgateway_pending_url; ?></div>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-sm-2 control-label"><?php echo $entry_ik_status_url; ?></label>
-                                <div class="col-sm-10"><?php echo $ikgateway_status_url; ?></div>
                             </div>
                         </div><!-- </div id="tab_general">  -->
                         <div id="tab_log" class="tab-pane">

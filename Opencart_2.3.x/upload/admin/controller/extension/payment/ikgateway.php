@@ -29,7 +29,7 @@ class ControllerExtensionPaymentIkgateway extends Controller {
 
             $this->session->data['success'] = $this->language->get('text_success');
 
-            $this->response->redirect($this->makeUrl('extension/payment'));
+            $this->response->redirect($this->url->link('extension/extension', 'token=' . $this->session->data['token'] . '&type=payment', true));
         }
 
         $data['heading_title'] = $this->language->get('heading_title');
@@ -74,6 +74,18 @@ class ControllerExtensionPaymentIkgateway extends Controller {
         $data['ikgateway_pending_url']  = HTTP_CATALOG . 'index.php?route=extension/payment/ikgateway/success';
         $data['ikgateway_status_url']   = HTTP_CATALOG . 'index.php?route=extension/payment/ikgateway/status';
         $data['log_lines']                 = $this->readLastLines(DIR_LOGS . 'ikgateway.log', self::MAX_LAST_LOG_LINES);
+
+
+        //New API translations
+        $data['new_feature_api'] = $this->language->get('new_feature_api');
+        $data['entry_ik_api_help'] = $this->language->get('entry_ik_api_help');
+        $data['entry_ik_api_id'] = $this->language->get('entry_ik_api_id');
+        $data['error_ik_api_id'] = $this->language->get('error_ik_api_id');
+        $data['entry_ik_api_key'] = $this->language->get('entry_ik_api_key');
+        $data['error_ik_api_key'] = $this->language->get('error_ik_api_key');
+        $data['entry_api_status'] = $this->language->get('entry_api_status');
+
+
 
         if (isset($this->error['warning'])) {
             $data['error_warning'] = $this->error['warning'];
@@ -152,6 +164,22 @@ class ControllerExtensionPaymentIkgateway extends Controller {
             $data['ikgateway_sign_test_key']= "";
         }
 
+        if (isset($this->request->post['ikgateway_api_id'])) {
+            $data['ikgateway_api_id'] = $this->request->post['ikgateway_api_id'];
+        } elseif($this->config->get('ikgateway_api_id')) {
+            $data['ikgateway_api_id'] = $this->config->get('ikgateway_api_id');
+        } else {
+            $data['ikgateway_api_id']= "";
+        }
+
+        if (isset($this->request->post['ikgateway_api_key'])) {
+            $data['ikgateway_api_key'] = $this->request->post['ikgateway_api_key'];
+        } elseif($this->config->get('ikgateway_api_key')) {
+            $data['ikgateway_api_key'] = $this->config->get('ikgateway_api_key');
+        } else {
+            $data['ikgateway_api_key']= "";
+        }
+
         if (isset($this->request->post['ikgateway_currency'])) {
             $data['ikgateway_currency'] = $this->request->post['ikgateway_currency'];
         } elseif($this->config->get('ikgateway_currency')) {
@@ -190,6 +218,13 @@ class ControllerExtensionPaymentIkgateway extends Controller {
             $data['ikgateway_status'] = $this->config->get('ikgateway_status');
         } else {
             $data['ikgateway_status']= "";
+        }
+        if (isset($this->request->post['ikgateway_api_status'])) {
+            $data['ikgateway_api_status'] = $this->request->post['ikgateway_api_status'];
+        } elseif($this->config->get('ikgateway_api_status')) {
+            $data['ikgateway_api_status'] = $this->config->get('ikgateway_api_status');
+        } else {
+            $data['ikgateway_api_status']= "";
         }
 
         if (isset($this->request->post['ikgateway_log'])) {

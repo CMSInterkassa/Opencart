@@ -22,10 +22,15 @@ class ControllerExtensionPaymentIkgateway extends Controller {
 
     public function index()
     {
+
         $this->language->load('extension/payment/ikgateway');
         $this->load->model('checkout/order');
 
         $data['text_confirm_title'] = $this->language->get('text_confirm_title');
+        $data['text_select_payment_method'] = $this->language->get('text_select_payment_method');
+        $data['text_select_currency'] = $this->language->get('text_select_currency');
+        $data['text_press_pay'] = $this->language->get('text_press_pay');
+        $data['pay_via'] = $this->language->get('pay_via');
         $data['button_confirm'] = $this->language->get('button_confirm');
         $data['continue'] = $this->url->link('checkout/success', '', 'SSL');
         
@@ -38,7 +43,11 @@ class ControllerExtensionPaymentIkgateway extends Controller {
             'ik_pm_no' => $this->session->data['order_id'],
             'ik_desc' => "#".$this->session->data['order_id'],
             'ik_co_id' => $this->config->get('ikgateway_shop_id'),
-            'ik_cur' => $this->config->get('ikgateway_currency')
+            'ik_cur' => $this->config->get('ikgateway_currency'),
+            'ik_ia_u'=>$this->url->link('extension/payment/ikgateway/status', '', 'SSL'),
+            'ik_fal_u'=>$this->url->link('extension/payment/ikgateway/fail', '', 'SSL'),
+            'ik_pnd_u'=>$this->url->link('extension/payment/ikgateway/success', '', 'SSL'),
+            'ik_suc_u'=>$this->url->link('extension/payment/ikgateway/success', '', 'SSL')
         );
 
         $data['action'] = 'https://sci.interkassa.com';
@@ -48,17 +57,45 @@ class ControllerExtensionPaymentIkgateway extends Controller {
         $data['ik_pm_no'] = $ik_option['ik_pm_no'];
         $data['ik_cur'] = $ik_option['ik_cur'];
         $data['ik_desc'] = $ik_option['ik_desc'];
-        
-        ksort($ik_option, SORT_STRING);
-        array_push($ik_option, $this->key);
-        $ik_sign = implode(':', $ik_option);
-        
-        $data['ik_sign'] = base64_encode(md5($ik_sign, true));
+        $data['ik_fal_u'] = $ik_option['ik_fal_u'];
+        $data['ik_pnd_u'] = $ik_option['ik_pnd_u'];
+        $data['ik_suc_u'] = $ik_option['ik_suc_u'];
+        $data['ik_ia_u'] = $ik_option['ik_ia_u'];
 
+
+        
+        $data['ik_sign'] = $this->IkSignFormation($ik_option , $this->key);
         unset($ik_option);
-
         $this->id = 'payment';
-        
+
+
+
+        //Новое АПИ
+        $api_status = $this->config->get('ikgateway_api_status');
+        if($api_status == 1){
+
+            if ($this->request->server['HTTPS']) {
+                $server = $this->config->get('config_ssl');
+            } else {
+                $server = $this->config->get('config_url');
+            }
+
+            $images = $server.'image/extension/payment/ikgetaway/paysystems/';
+
+
+
+            $data['api_status'] = $api_status;
+            $data['ajax_url'] = $this->url->link('extension/payment/ikgateway/asyncSignFormation', '', 'SSL');
+            $data['shop_cur'] = $this->config->get('ikgateway_currency');
+            $data['images'] = $images;
+            $data['payment_systems'] = $this->getIkPaymentSystems(
+                $this->config->get('ikgateway_shop_id'),
+                $this->config->get('ikgateway_api_id'),
+                $this->config->get('ikgateway_api_key')
+            );
+        }
+
+
         if (file_exists(DIR_TEMPLATE . $this->config->get('config_template') . '/template/extension/payment/ikgateway.tpl'))
         {
             return $this->load->view($this->config->get('config_template') . '/template/extension/payment/ikgateway.tpl', $data);
@@ -78,7 +115,8 @@ class ControllerExtensionPaymentIkgateway extends Controller {
         if (!$this->validate(true)) {
             return;
         }
-
+        $this->load->model('checkout/order');
+        $this->model_checkout_order->addOrderHistory($this->request->post['ik_pm_no'], $this->config->get('ikgateway_order_status_id'));
         if ($this->request->post['ik_inv_st']) { //ik_payment_state
             if ($this->order['order_status_id']){
                 $this->model_checkout_order->update($this->order['order_id'],
@@ -222,5 +260,60 @@ class ControllerExtensionPaymentIkgateway extends Controller {
         }
         return true;
     }
+    public function getIkPaymentSystems($ik_co_id, $ik_api_id,$ik_api_key){
+        $username = $ik_api_id;
+        $password = $ik_api_key;
+        $remote_url = 'https://api.interkassa.com/v1/paysystem-input-payway?checkoutId='.$ik_co_id;
+
+        // Create a stream
+        $opts = array(
+            'http'=>array(
+                'method'=>"GET",
+                'header' => "Authorization: Basic " . base64_encode("$username:$password")
+            )
+        );
+
+        $context = stream_context_create($opts);
+        $file = file_get_contents($remote_url, false, $context);
+        $json_data=json_decode($file);
+
+        $payment_systems = array();
+        foreach ($json_data->data as $ps => $info){
+            $payment_system = $info->ser;
+            if(!array_key_exists($payment_system,$payment_systems)){
+                $payment_systems[$payment_system] = array();
+                foreach ($info->name as $name){
+                    //ВЫБРАЛИ ТОЛЬКО АНГЛИЙСКИЙ ПЕРЕВОД ТАК КАК ОН ЕСТЬ У ВСЕХ МЕТОДОВ
+                    if($name->l == 'en'){
+                        $payment_systems[$payment_system]['title'] = ucfirst($name->v);
+                    }
+                    $payment_systems[$payment_system]['name'][$name->l] = $name->v;
+
+                }
+            }
+            $payment_systems[$payment_system]['currency'][strtoupper($info->curAls)] = $info->als;
+
+        }
+        return $payment_systems;
+    }
+
+    public function IkSignFormation($data){
+
+        if (!empty($data['ik_sign'])) unset($data['ik_sign']);
+
+        ksort($data, SORT_STRING);
+        array_push($data, $this->key);
+        $arg = implode(':', $data);
+        $ik_sign = base64_encode(md5($arg, true));
+        json_decode($ik_sign);
+
+        return $ik_sign;
+    }
+    public function asyncSignFormation(){
+        $sign = $this->IkSignFormation($_POST);
+        $this->response->addHeader('Content-Type: application/json');
+        $this->response->setOutput(json_encode($sign));
+    }
+    
 }
 ?>
