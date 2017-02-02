@@ -27,7 +27,7 @@
 </form>
 <div class="buttons">
     <div class="right">
-        <a onclick="document.forms['checkout'].submit()" class="btn btn-primary" id="ikgetaway_submit"><span><?php echo $button_confirm; ?></span></a>
+        <a onclick="document.forms['ikgetaway'].submit()" class="btn btn-primary" id="ikgetaway_submit"><span><?php echo $button_confirm; ?></span></a>
     </div>
 </div>
 
