@@ -44,7 +44,7 @@ class ControllerExtensionPaymentIkgateway extends Controller
         $ik_option = array(
             'ik_am' => number_format($this->currency->format($order_info['total'], $this->config->get('ikgateway_currency'), $this->currency->getValue($this->config->get('ikgateway_currency')), FALSE), 2, '.', ''),
             'ik_pm_no' => $this->session->data['order_id'],
-            'ik_desc' => "#" . $this->session->data['order_id'],
+            'ik_desc' => "Оплата заказа #" . $this->session->data['order_id']. ' в магазине CSGOKnife.net',
             'ik_co_id' => $this->config->get('ikgateway_shop_id'),
             'ik_cur' => $this->config->get('ikgateway_currency'),
             'ik_ia_u' => $this->url->link('extension/payment/ikgateway/status', '', 'SSL'),
@@ -252,14 +252,14 @@ class ControllerExtensionPaymentIkgateway extends Controller
         $ip_stack = array(
             'ip_begin' => '151.80.190.97',
             'ip_end' => '151.80.190.104'
-        );
+            );
 
-        if (!(ip2long($_SERVER['REMOTE_ADDR']) >= ip2long($ip_stack['ip_begin']) && ip2long($_SERVER['REMOTE_ADDR']) <= ip2long($ip_stack['ip_end']))) {
-            wrlog('REQUEST IP' . $_SERVER['REMOTE_ADDR'] . 'doesnt match');
+        if (ip2long($_SERVER['REMOTE_ADDR']) < ip2long($ip_stack['ip_begin']) && ip2long($_SERVER['REMOTE_ADDR']) > ip2long($ip_stack['ip_end']) ) {
             die('Ты мошенник! Пшел вон отсюда!');
         }
         return true;
     }
+
 
     public function getIkPaymentSystems($ik_co_id, $ik_api_id, $ik_api_key)
     {
@@ -279,6 +279,7 @@ class ControllerExtensionPaymentIkgateway extends Controller
         $file = file_get_contents($remote_url, false, $context);
         $json_data = json_decode($file);
 
+        if($json_data->status != 'error'){
         $payment_systems = array();
         foreach ($json_data->data as $ps => $info) {
             $payment_system = $info->ser;
@@ -296,6 +297,9 @@ class ControllerExtensionPaymentIkgateway extends Controller
 
         }
         return $payment_systems;
+        }else{
+            echo '<strong style="color:red;">API connection error!<br>'.$json_data->message.'</strong>';
+        }
     }
 
     public function IkSignFormation($data, $secret_key)
