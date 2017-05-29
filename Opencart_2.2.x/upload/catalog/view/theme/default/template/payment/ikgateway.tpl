@@ -1,24 +1,18 @@
-<?php 
-/* Создано в компании www.gateon.net
- * =================================================================
- * Интеркасса модуль OPENCART 2.0.x ПРИМЕЧАНИЕ ПО ИСПОЛЬЗОВАНИЮ
- * =================================================================
- *  Этот файл предназначен для Opencart 2.0.x
- *  www.gateon.net не гарантирует правильную работу этого расширения на любой другой
- *  версии Opencart, кроме Opencart 2.0.x
- *  данный продукт не поддерживает программное обеспечение для других
- *  версий Opencart.
- * =================================================================
-*/
-?>
 <form action="<?php echo $action ?>" method="post" id="checkout">
-    <input type="hidden" name="ik_am" value="<?php echo $ik_payment_amount; ?>"/>
-    <input type="hidden" name="ik_co_id" value="<?php echo $ik_shop_id; ?>"/>
+    <input type="hidden" name="ik_am" value="<?php echo $ik_am; ?>"/>
+    <input type="hidden" name="ik_co_id" value="<?php echo $ik_co_id; ?>"/>
     <input type="hidden" name="ik_cur" value="<?php echo $ik_cur; ?>" />
-    <input type="hidden" name="ik_desc" value="<?php echo $ik_payment_desc; ?>"/>
-    <input type="hidden" name="ik_pm_no" value="<?php echo $ik_payment_id; ?>"/>
-    <input type="hidden" name="ik_sign" value="<?php echo $ik_sign_hash; ?>"/>
-
+    <input type="hidden" name="ik_desc" value="<?php echo $ik_desc; ?>"/>
+    <input type="hidden" name="ik_pm_no" value="<?php echo $ik_pm_no; ?>"/>
+    <input type="hidden" name="ik_loc" value="<?php echo $ik_loc; ?>"/>
+    <input type="hidden" name="ik_suc_u" value="<?php echo $ik_suc_u; ?>"/>
+    <input type="hidden" name="ik_fal_u" value="<?php echo $ik_fal_u; ?>"/>
+    <input type="hidden" name="ik_pnd_u" value="<?php echo $ik_pnd_u; ?>"/>
+    <input type="hidden" name="ik_ia_u" value="<?php echo $ik_ia_u; ?>"/>
+    <?php if($ik_pw_via) { ?>
+		<input type="hidden" name="ik_pw_via" value="<?php echo $ik_pw_via; ?>"/>
+    <?php } ?>
+    <input type="hidden" name="ik_sign" value="<?php echo $ik_sign; ?>"/>
 </form>
 <div class="buttons">
     <div class="right">

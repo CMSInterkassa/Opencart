@@ -1,65 +1,49 @@
 <?php
-/* Создано в компании www.gateon.net
- * =================================================================
- * Интеркасса модуль OPENCART 2.0.x ПРИМЕЧАНИЕ ПО ИСПОЛЬЗОВАНИЮ
- * =================================================================
- *  Этот файл предназначен для Opencart 2.0.x
- *  www.gateon.net не гарантирует правильную работу этого расширения на любой другой
- *  версии Opencart, кроме Opencart 2.0.x
- *  данный продукт не поддерживает программное обеспечение для других
- *  версий Opencart.
- * =================================================================
-*/
-$_['heading_title']               = 'Интеркасса 2.0';
+$_['heading_title']               = 'Interkassa 2.0';
 
-// Tab 
-$_['tab_log']                     = 'Журнал';
+// Tab
+$_['tab_log']                     = 'Log';
 
-// Text 
-$_['text_payment']                = 'Оплата';
-$_['text_success']                = 'Настройки модуля обновлены!';
+// Text
+$_['text_payment']                = 'Payment';
+$_['text_success']                = 'Settings saved!';
 $_['text_shoputils_ik']           = '<a onclick="window.open(\'http://www.interkassa.com/\');"><img src="../image/payment/shoputils_ik.jpg" alt="Interkassa.com" title="Interkassa.com"/></a>';
-$_['text_order_status_cart']      = 'Корзина';
-$_['text_ik_log_off']             = 'Выключен';
-$_['text_ik_log_short']           = 'Частичный (Только результары операций)';
-$_['text_ik_log_full']            = 'Полный (Все запросы)';
+$_['text_order_status_cart']      = 'Cart';
+$_['text_ik_log_off']             = 'Log disabled';
+$_['text_ik_log_short']           = 'Partly (Only results)';
+$_['text_ik_log_full']            = 'Full (All response)';
 
-$_['text_ik_parameters']          = 'Параметры для настройки приема платежей через Интеркассу';
-$_['text_ik_urls']                = 'В разделе "Мои кассы -> Настройки кассы -> Интерфейс" необходимо везде установить следующие значения:<br />
-<b>"Тип запроса" - "POST"<br />
-везде выключить "Разрешить переопределять в запросе "</b><br>';
+$_['text_ik_parameters']          = 'Interkassa Payment settings';
+$_['text_ik_urls']                = 'In tab "Settings -> Interface" allow override all fields. Type : POST';
 
 
 // Entry
-$_['entry_ik_log']                = 'Журнал:';
-$_['entry_ik_log_help']           = 'Журнал запросов от Интеркассы сохраняется в файле: system/logs/shoputils_ik.txt';
-$_['entry_ik_shop_id']            = 'Идентификатор кассы:';
-$_['entry_ik_shop_id_help']       = 'Идентификатор кассы зарегистрированного в системе «INTERKASSA». Узнать его можно в разделе «Мои кассы». Пример: 529a6e08bf4efcae2d1b8488
-';
-$_['entry_ik_sign_hash']          = 'Секретный ключ:';
-$_['entry_ik_sign_hash_help']     = 'Используется SCI (Интеркассой) при формировании цифровой подписи. Должен совпадать с секретным ключем в разделе "Мои кассы -> Настройки кассы -> Безопасность -> Секретный ключ".';
-$_['entry_ik_sign_test_key']      = 'Тестовый ключ:';
-$_['entry_ik_sign_test_key_help'] = 'Используется SCI (Интеркассой) при формировании цифровой подписи, если платеж был совершен через тестовую платежную систему. Должен совпадать с тестовым ключем в разделе "Мои кассы -> Настройки кассы -> Безопасность -> Тестовый ключ".';
+$_['entry_ik_log']                = 'Log:';
+$_['entry_ik_log_help']           = 'Interkassa Log: system/logs/shoputils_ik.txt';
+$_['entry_ik_shop_id']            = 'Purse ID:';
+$_['entry_ik_shop_id_help']       = 'Purse Id that you create in your Interkassa account';
+$_['entry_ik_sign_hash']          = 'Secret key:';
+$_['entry_ik_sign_hash_help']     = 'Settings -> Safety -> Secret key.';
+$_['entry_ik_sign_test_key']      = 'Test key:';
+$_['entry_ik_sign_test_key_help'] = 'Settings -> Safety -> Test key.';
 
-$_['entry_ik_currency']           = 'Валюта магазина:';
-$_['entry_ik_currency_help']      = '2222Валюта, в которой магазин передает сумму платежа на платежный шлюз "Интеркасса". На 01.12.2013 Интеркасса принимает следующие валюты: RUB, UAH, EUR, USD.';
-$_['entry_ik_test_mode']          = 'Тестовый режим:';
-$_['entry_ik_test_mode_help']     = 'В тестовом режиме можно проверить настройки модуля и Интеркассы через тестовую валюту Интеркассы, выбрав при оплате "Тестовая платежная система". В этом случае для подписывания ЭЦП (электронной цифровой подписи) используется тестовый ключ. Для приема реальных платежей - тестовый режим необходимо выключить.';
-$_['entry_log_file']              = 'Файл журнала:';
-$_['entry_log_file_help']         = 'Последние %d строк из файла журнала.';
-$_['entry_status']                = 'Статус:';
-$_['entry_order_status']          = 'Статус заказа после оплаты:';
-$_['entry_geo_zone']              = 'Географическая зона:';
-$_['entry_sort_order']            = 'Порядок сортировки:';
-$_['entry_ik_success_url']        = 'URL успешной оплаты:';
-$_['entry_ik_fail_url']           = 'URL неуспешной оплаты :';
-$_['entry_ik_pending_url']        = 'URL ожидания проведения платежа:';
-$_['entry_ik_status_url']         = 'URL взаимодействия :';
+$_['entry_ik_currency']           = 'Currency:';
+$_['entry_ik_currency_help']      = 'Currency that will be send to Interkassa ( RUB, UAH, EUR, USD).';
+$_['entry_ik_test_mode']          = 'Test mode:';
+$_['entry_ik_test_mode_help']     = 'Test mode allowed to check module performance. You cannot choose another payment system except Test Payment System';
+$_['entry_log_file']              = 'Log file:';
+$_['entry_log_file_help']         = 'Last %d log rows.';
+$_['entry_status']                = 'Status:';
+$_['entry_order_status']          = 'Order status after success payment:';
+$_['entry_pending_order_status']          = 'Order status after panding payment:';
+$_['entry_geo_zone']              = 'Geo zone:';
+$_['entry_sort_order']            = 'Sort order:';
+
 
 
 // Error
-$_['error_permission']            = 'У Вас нет прав для управления этим модулем!';
-$_['error_ik_shop_id']            = 'Необходимо заполнить поле "Идентификатор кассы"!';
-$_['error_ik_sign_hash']          = 'Необходимо заполнить поле "Секретный ключ"!';
-$_['error_ik_sign_test_key']      = 'Необходимо заполнить поле "Тестовый ключ"!';
+$_['error_permission']            = 'You do not have permissions!';
+$_['error_ik_shop_id']            = 'Purse ID - must be filled up';
+$_['error_ik_sign_hash']          = 'Secret key - must be filled up';
+$_['error_ik_sign_test_key']      = 'Test key - must be filled up';
 ?>

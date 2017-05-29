@@ -1,16 +1,4 @@
-<?php
-/* Создано в компании www.gateon.net
- * =================================================================
- * Интеркасса модуль OPENCART 2.0.x ПРИМЕЧАНИЕ ПО ИСПОЛЬЗОВАНИЮ
- * =================================================================
- *  Этот файл предназначен для Opencart 2.0.x
- *  www.gateon.net не гарантирует правильную работу этого расширения на любой другой
- *  версии Opencart, кроме Opencart 2.0.x
- *  данный продукт не поддерживает программное обеспечение для других
- *  версий Opencart.
- * =================================================================
-*/
-?>
+
 <?php echo $header; ?><?php echo $column_left; ?>
 <div id="content">
     <div class="page-header">
@@ -62,6 +50,20 @@
                                         <?php foreach ($order_statuses as $order_status) { ?>
                                         <?php if (!isset($order_status['order_status_id'])) continue; ?>
                                         <?php if ($order_status['order_status_id'] == $ikgateway_order_status_id) { ?>
+                                        <option value="<?php echo $order_status['order_status_id']; ?>"
+                                                selected="selected"><?php echo $order_status['name']; ?></option>
+                                        <?php } else { ?>
+                                        <option value="<?php echo $order_status['order_status_id']; ?>"><?php echo $order_status['name']; ?></option>
+                                        <?php } ?>
+                                        <?php } ?>
+                                    </select></div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label" for="ikgateway_pending_order_status_id"><?php echo $entry_pending_order_status; ?></label>
+                                <div class="col-sm-10"><select class="form-control" id="ikgateway_pending_order_status_id" name="ikgateway_pending_order_status_id">
+                                        <?php foreach ($order_statuses as $order_status) { ?>
+                                        <?php if (!isset($order_status['order_status_id'])) continue; ?>
+                                        <?php if ($order_status['order_status_id'] == $ikgateway_pending_order_status_id) { ?>
                                         <option value="<?php echo $order_status['order_status_id']; ?>"
                                                 selected="selected"><?php echo $order_status['name']; ?></option>
                                         <?php } else { ?>
@@ -156,22 +158,6 @@
                                 <div class="col-sm-12">
                                     <div class="help"><?php echo $text_ik_urls ?></div>
                                 </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-sm-2 control-label"><?php echo $entry_ik_success_url; ?></label>
-                                <div class="col-sm-10"><?php echo $ikgateway_success_url; ?></div>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-sm-2 control-label"><?php echo $entry_ik_fail_url; ?></label>
-                                <div class="col-sm-10"><?php echo $ikgateway_fail_url; ?></div>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-sm-2 control-label"><?php echo $entry_ik_pending_url; ?></label>
-                                <div class="col-sm-10"><?php echo $ikgateway_pending_url; ?></div>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-sm-2 control-label"><?php echo $entry_ik_status_url; ?></label>
-                                <div class="col-sm-10"><?php echo $ikgateway_status_url; ?></div>
                             </div>
                         </div><!-- </div id="tab_general">  -->
                         <div id="tab_log" class="tab-pane">

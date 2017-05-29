@@ -1,15 +1,12 @@
 ﻿<?php
-/* Создано в компании interkassa
- * =================================================================
- * Интеркасса модуль OPENCART 2.0.x ПРИМЕЧАНИЕ ПО ИСПОЛЬЗОВАНИЮ
- * =================================================================
- *  Этот файл предназначен для Opencart 2.0.x
- *  interkassa не гарантирует правильную работу этого расширения на любой другой
- *  версии Opencart, кроме Opencart 2.0.x
- *  данный продукт не поддерживает программное обеспечение для других
- *  версий Opencart.
- * =================================================================
-*/
+/**
+ * @name Интеркасса 2.0
+ * @description Модуль разработан в компании GateOn предназначен для CMS Opencart 2.0.x - 2.2.x
+ * @author www.gateon.net
+ * @email www@smartbyte.pro
+ * @last_update 29.05.2017
+ * @version 1.2
+ */
 
 class ControllerPaymentIkgateway extends Controller {
     const MAX_LAST_LOG_LINES = 500;
@@ -39,6 +36,7 @@ class ControllerPaymentIkgateway extends Controller {
         $data['entry_status'] = $this->language->get('entry_status');
         $data['entry_sort_order'] = $this->language->get('entry_sort_order');
         $data['entry_order_status'] = $this->language->get('entry_order_status');
+        $data['entry_pending_order_status'] = $this->language->get('entry_pending_order_status');
         $data['entry_ik_log'] = $this->language->get('entry_ik_log');
         $data['entry_ik_log_help'] = $this->language->get('entry_ik_log_help');
         $data['entry_ik_shop_id'] = $this->language->get('entry_ik_shop_id');
@@ -51,10 +49,6 @@ class ControllerPaymentIkgateway extends Controller {
         $data['entry_ik_currency_help'] = $this->language->get('entry_ik_currency_help');
         $data['entry_ik_test_mode'] = $this->language->get('entry_ik_test_mode');
         $data['entry_ik_test_mode_help'] = $this->language->get('entry_ik_test_mode_help');
-        $data['entry_ik_success_url'] = $this->language->get('entry_ik_success_url');
-        $data['entry_ik_fail_url'] = $this->language->get('entry_ik_fail_url');
-        $data['entry_ik_pending_url'] = $this->language->get('entry_ik_pending_url');
-        $data['entry_ik_status_url'] = $this->language->get('entry_ik_status_url');
         $data['tab_general'] = $this->language->get('tab_general');
         $data['tab_log'] = $this->language->get('tab_log');
         $data['text_edit'] = $this->language->get('text_edit');
@@ -69,10 +63,6 @@ class ControllerPaymentIkgateway extends Controller {
         $data['entry_log_file_help']       = sprintf($this->language->get('entry_log_file_help'), self::MAX_LAST_LOG_LINES);
         $data['action']                    = $this->makeUrl('payment/ikgateway');
         $data['cancel']                    = $this->makeUrl('extension/payment');
-        $data['ikgateway_success_url']  = HTTP_CATALOG . 'index.php?route=payment/ikgateway/success';
-        $data['ikgateway_fail_url']     = HTTP_CATALOG . 'index.php?route=payment/ikgateway/fail';
-        $data['ikgateway_pending_url']  = HTTP_CATALOG . 'index.php?route=payment/ikgateway/success';
-        $data['ikgateway_status_url']   = HTTP_CATALOG . 'index.php?route=payment/ikgateway/status';
         $data['log_lines']                 = $this->readLastLines(DIR_LOGS . 'ikgateway.log', self::MAX_LAST_LOG_LINES);
 
         if (isset($this->error['warning'])) {
@@ -174,6 +164,14 @@ class ControllerPaymentIkgateway extends Controller {
             $data['ikgateway_order_status_id'] = $this->config->get('ikgateway_order_status_id');
         } else {
             $data['ikgateway_order_status_id']= "";
+        }
+
+        if (isset($this->request->post['ikgateway_pending_order_status_id'])) {
+            $data['ikgateway_pending_order_status_id'] = $this->request->post['ikgateway_pending_order_status_id'];
+        } elseif($this->config->get('ikgateway_pending_order_status_id')) {
+            $data['ikgateway_pending_order_status_id'] = $this->config->get('ikgateway_pending_order_status_id');
+        } else {
+            $data['ikgateway_pending_order_status_id']= "";
         }
 
         if (isset($this->request->post['ikgateway_geo_zone_id'])) {
