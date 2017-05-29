@@ -2,8 +2,8 @@
 /**
  * @name Интеркасса 2.0
  * @description Модуль разработан в компании GateOn предназначен для CMS Opencart 2.0.x - 2.2.x
- * @author www.gateon.net
- * @email www@smartbyte.pro
+ * @author interkassa.com
+ * @email support@interkassa.com
  * @last_update 29.05.2017
  * @version 1.2
  */
