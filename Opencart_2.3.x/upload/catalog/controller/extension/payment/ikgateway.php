@@ -44,7 +44,7 @@ class ControllerExtensionPaymentIkgateway extends Controller
         $ik_option = array(
             'ik_am' => number_format($this->currency->format($order_info['total'], $this->config->get('ikgateway_currency'), $this->currency->getValue($this->config->get('ikgateway_currency')), FALSE), 2, '.', ''),
             'ik_pm_no' => $this->session->data['order_id'],
-            'ik_desc' => "Оплата заказа #" . $this->session->data['order_id']. ' в магазине CSGOKnife.net',
+            'ik_desc' => "Оплата заказа #" . $this->session->data['order_id'],
             'ik_co_id' => $this->config->get('ikgateway_shop_id'),
             'ik_cur' => $this->config->get('ikgateway_currency'),
             'ik_ia_u' => $this->url->link('extension/payment/ikgateway/status', '', 'SSL'),
