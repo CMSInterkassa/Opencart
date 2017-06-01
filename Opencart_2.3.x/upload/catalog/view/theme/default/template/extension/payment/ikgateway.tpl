@@ -43,7 +43,7 @@
             3.<?php echo $text_press_pay; ?>
         </h1>
         <?php foreach ($payment_systems as $ps => $info ) { ?>
-        <div class="col-md-3 col-lg-2 text-center payment_system">
+        <div class="col-md-3 text-center payment_system">
             <div class="panel panel-warning panel-pricing">
                 <div class="panel-heading">
                     <img src="<?php echo $images; ?><?php echo $ps; ?>.png" alt="<?php echo $info['title'] ; ?>">
@@ -68,8 +68,6 @@
                 <div class="panel-footer">
                     <a class="btn btn-block btn-success ik-payment-confirmation" data-title="<?php echo $ps ; ?>"
                        href="#"><?php echo $pay_via ; ?>
-                       <br>
-                       <strong><?php echo $info['title'] ; ?></strong>
                    </a>
                </div>
            </div>
