@@ -173,7 +173,7 @@ window.onclick = function(event) {
         flex-wrap: wrap;
     }
     .payment_system .btn-primary, .payment_system .btn-secondary, .payment_system .btn-tertiary {
-        padding: 8px;
+        padding: 6px;
     }
     .panel-pricing {
         -moz-transition: all .3s ease;
@@ -224,7 +224,7 @@ window.onclick = function(event) {
         .interkassa-modal {
         display: none; 
         position: fixed; 
-        z-index: 1; 
+        z-index: 100000; 
         left: 0;
         top: 0;
         width: 100%; 
