@@ -1,0 +1,17 @@
+<form name="payment_interkassa" id="InterkassaForm" action="javascript:selpayIK.selPaysys()" method="POST">
+    {% for key, value in formData %}
+        <input type="hidden" name="{{ key }}" value="{{ value }}"/>
+    {% endfor %}
+    <div class="buttons">
+        <div class="pull-right">
+            <button id="ik_button" class="btn btn-primary">{{ button_confirm }}</button>
+        </div>
+    </div>
+</form>
+
+{{ modal_pay_systems }}
+<script type="text/javascript" src="/catalog/view/javascript/interkassa.js"></script>
+<script type="text/javascript">
+    selpayIK.actForm = '{{ action }}';
+    {#selpayIK.req_url = '{{ action_sel_ps }}';#}
+</script>
