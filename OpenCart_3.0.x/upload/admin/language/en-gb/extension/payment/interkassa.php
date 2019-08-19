@@ -1,5 +1,5 @@
 <?php
-$_['heading_title']           = 'Interkassa';
+$_['heading_title']           = 'Interkassa 2.0';
 
 // Tab 
 $_['tab_settings']            = 'Setting payments';

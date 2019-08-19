@@ -17,9 +17,11 @@
   </div>
   <div class="container-fluid">
     {% if error_warning %}
-    <div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> {{ error_warning }}
-      <button type="button" class="close" data-dismiss="alert">&times;</button>
-    </div>
+      {% for value in error_warning %}
+        <div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> {{ value }}
+          <button type="button" class="close" data-dismiss="alert">&times;</button>
+        </div>
+      {% endfor %}
     {% endif %}
     {% if success %}
     <div class="alert alert-success"><i class="fa fa-exclamation-circle"></i> {{ success }}
@@ -213,6 +215,9 @@
                   <input type="text" name="payment_interkassa_api_id" value="{{ payment_interkassa_api_id }}"
                          placeholder="{{ entry_api_id }}" id="input-api-id" class="form-control" />
                   <span class="help-block">{{ help_api_id }}</span>
+                  {% if error_api_id %}
+                    <div class="text-danger">{{ error_api_id }}</div>
+                  {% endif %}
                 </div>
               </div>
               <div class="form-group">
@@ -221,6 +226,9 @@
                   <input type="text" name="payment_interkassa_api_key" value="{{ payment_interkassa_api_key }}"
                          placeholder="{{ entry_api_key }}" id="input-api-key" class="form-control" />
                   <span class="help-block">{{ help_api_key }}</span>
+                  {% if error_api_key %}
+                    <div class="text-danger">{{ error_api_key }}</div>
+                  {% endif %}
                 </div>
               </div>
               {% endif %}
@@ -329,20 +337,20 @@
         },
         success: function(json) {
           $('.alert-success, .alert-danger').remove();
-                
+
           if (json['error']) {
             $('#content > .container-fluid').before('<div class="alert alert-danger" style="display: none;"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + '</div>');
             $('.alert-danger').fadeIn('slow');
           }
-          
+
           if (json['success']) {
                     $('#content > .container-fluid').before('<div class="alert alert-success" style="display: none;"><i class="fa fa-check-circle"></i> ' + json['success'] + '</div>');
-            
+
             $('#pre-log').empty();
             $('.alert-success').fadeIn('slow');
           }
 
-          $('html, body').animate({ scrollTop: 0 }, 'slow'); 
+          $('html, body').animate({ scrollTop: 0 }, 'slow');
         },
         error: function(xhr, ajaxOptions, thrownError) {
           alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);

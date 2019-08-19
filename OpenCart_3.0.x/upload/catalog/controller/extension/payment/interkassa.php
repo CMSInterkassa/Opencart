@@ -1,23 +1,35 @@
 <?php
+
 class ControllerExtensionPaymentInterkassa extends Controller
 {
     private $order;
     private $log;
-    private static $ik_action = 'https://sci.interkassa.com';
+//    private static $ik_action = 'https://sci.interkassa.com';
+    private static $ikUrlSCI = 'https://sci.interkassa.com';
+    private static $ikUrlAPI = 'https://api.interkassa.com/v1/';
     private static $LOG_OFF = 0;
     private static $LOG_SHORT = 1;
     private static $LOG_FULL = 2;
 
+    public function __construct($registry)
+    {
+        parent::__construct($registry);
+        $this->load->language('extension/payment/interkassa');
+
+        $this->ip_stack = array(
+            '151.80.190.97',
+            '35.233.69.55'
+        );
+    }
+
     public function index()
     {
-        $this->load->language('extension/payment/interkassa');
         $this->confirm();
-
         $data = array();
         $data['button_confirm'] = $this->language->get('button_confirm');
-        $data['action'] = self::$ik_action;
+        $data['action'] = self::$ikUrlSCI;
 
-        if($this->config->get('payment_interkassa_api_enable')) {
+        if ($this->config->get('payment_interkassa_api_enable')) {
             $data2 = $this->language->all();
 
             $data2['payment_systems'] = $this->getIkPaymentSystems(
@@ -61,14 +73,14 @@ class ControllerExtensionPaymentInterkassa extends Controller
             if ($this->request->post['ik_sign'] == $ik_sign && ($ik_response['ik_co_id'] == $this->config->get('payment_interkassa_cashbox_id'))) {
                 if ($ik_response['ik_inv_st'] == 'success') {
                     $this->model_checkout_order->addOrderHistory($order_id, $this->config->get('payment_interkassa_order_status_success'));
-                }
-                elseif ($ik_response['ik_inv_st'] == 'fail') {
+                    echo 'OK';
+                    header("HTTP/1.1 200 OK");
+                } elseif ($ik_response['ik_inv_st'] == 'fail') {
                     $this->model_checkout_order->addOrderHistory($order_id, $this->config->get('payment_interkassa_order_status_fail'));
                 }
 
                 return false;
-            }
-            else{
+            } else {
                 $this->sendForbidden($this->language->get('text_error_ik_sign_hash'));
             }
         }
@@ -93,7 +105,11 @@ class ControllerExtensionPaymentInterkassa extends Controller
         $this->logWrite('  POST:' . var_export($this->request->post, true), self::$LOG_FULL);
         $this->logWrite('  GET:' . var_export($this->request->get, true), self::$LOG_FULL);
 
-        $this->response->redirect($this->url->link('checkout/failure', '', 'SSL'));
+        if (!empty($this->session->data['order_id']) && $this->config->get('interkassa_order_status_confirm') && ($this->session->data['payment_method']['code'] == 'interkassa')) {
+            $this->load->model('checkout/order');
+            $this->model_checkout_order->addOrderHistory($this->session->data['order_id'], $this->config->get('interkassa_order_status_fail'));
+            $this->response->redirect($this->url->link('checkout/failure', '', 'SSL'));
+        }
     }
 
     public function confirm()
@@ -107,13 +123,13 @@ class ControllerExtensionPaymentInterkassa extends Controller
     protected function makeForm($order_id = false)
     {
         $this->load->model('checkout/order');
-        if (!$order_id ) {
-          if (isset($this->session->data['order_id'])) {
-            $order_id  = $this->session->data['order_id'];
-          } else {
-            $this->logWrite('Error: Unsupported Checkout Extension', self::$LOG_SHORT);
-            die($this->language->get('error_fail_checkout_extension'));
-          }
+        if (!$order_id) {
+            if (isset($this->session->data['order_id'])) {
+                $order_id = $this->session->data['order_id'];
+            } else {
+                $this->logWrite('Error: Unsupported Checkout Extension', self::$LOG_SHORT);
+                die($this->language->get('error_fail_checkout_extension'));
+            }
         }
         $order_info = $this->model_checkout_order->getOrder($order_id);
 
@@ -121,9 +137,9 @@ class ControllerExtensionPaymentInterkassa extends Controller
         if (!$this->currency->has($ikCurrencyCode)) {
             die(sprintf('Currency code (for code: %s) not found', $ikCurrencyCode));
         }
-        
+
         $ik_payment_amount = number_format($this->currency->convert($order_info['total'], $this->config->get('config_currency'), $ikCurrencyCode), 2, '.', '');
-        $ik_cashbox_id       = $this->config->get('payment_interkassa_cashbox_id');
+        $ik_cashbox_id = $this->config->get('payment_interkassa_cashbox_id');
 //        $ik_payment_desc  = sprintf($this->language->get('text_ik_payment_desc'), $order_info['order_id']);
 
         $interkassa_success_url = HTTPS_SERVER . 'index.php?route=extension/payment/interkassa/success';
@@ -132,17 +148,17 @@ class ControllerExtensionPaymentInterkassa extends Controller
         $interkassa_callback_url = HTTPS_SERVER . 'index.php?route=extension/payment/interkassa/callback';
 
         $formData = array(
-            'ik_am'     => $ik_payment_amount,
-            'ik_cur'    => $ikCurrencyCode,
-            'ik_co_id'  => $ik_cashbox_id,
-            'ik_pm_no'  => $order_id,
-            'ik_desc'   => "#$order_id",
-            'ik_ia_u'   => $interkassa_callback_url,
-            'ik_suc_u'  => $interkassa_success_url,
-            'ik_fal_u'  => $interkassa_fail_url,
-            'ik_pnd_u'  => $interkassa_pending_url,
+            'ik_am' => $ik_payment_amount,
+            'ik_cur' => $ikCurrencyCode,
+            'ik_co_id' => $ik_cashbox_id,
+            'ik_pm_no' => $order_id,
+            'ik_desc' => "#$order_id",
+            'ik_ia_u' => $interkassa_callback_url,
+            'ik_suc_u' => $interkassa_success_url,
+            'ik_fal_u' => $interkassa_fail_url,
+            'ik_pnd_u' => $interkassa_pending_url,
         );
-        if($this->config->get('payment_interkassa_test_mode'))
+        if ($this->config->get('payment_interkassa_test_mode'))
             $formData['ik_pw_via'] = 'test_interkassa_test_xts';
 
         $formData['ik_sign'] = $this->IkSignFormation($formData, $this->config->get('payment_interkassa_secret_key'));
@@ -174,11 +190,10 @@ class ControllerExtensionPaymentInterkassa extends Controller
         header("Expires: Thu, 01 Jan 1970 00:00:00 GMT");
         header("Content-type: text/plain");
         $request = $_POST;
-        if (isset($_POST['ik_act']) && $_POST['ik_act'] == 'process'){
+        if (isset($_POST['ik_act']) && $_POST['ik_act'] == 'process') {
             $request['ik_sign'] = $this->IkSignFormation($request, $this->config->get('payment_interkassa_secret_key'));
             $data = $this->getAnswerFromAPI($request);
-        }
-        else
+        } else
             $data = $this->IkSignFormation($request, $this->config->get('payment_interkassa_secret_key'));
         echo $data;
         exit;
@@ -186,7 +201,7 @@ class ControllerExtensionPaymentInterkassa extends Controller
 
     public function getAnswerFromAPI($data)
     {
-        $ch = curl_init(self::$ik_action);
+        $ch = curl_init(self::$ikUrlSCI);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
         curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
@@ -207,7 +222,7 @@ class ControllerExtensionPaymentInterkassa extends Controller
         array_push($dataSet, $secret_key);
         $arg = implode(':', $dataSet);
         $ik_sign = base64_encode(md5($arg, true));
-        $this->logWrite($ik_sign . ' = md5(' . $arg . ')', self::$LOG_SHORT);
+        $this->logWrite('IkSignFormation: ' . $ik_sign . ' = md5(' . $arg . ')', self::$LOG_SHORT);
         return $ik_sign;
     }
 
@@ -216,6 +231,15 @@ class ControllerExtensionPaymentInterkassa extends Controller
         $username = $ik_api_id;
         $password = $ik_api_key;
         $remote_url = 'https://api.interkassa.com/v1/paysystem-input-payway?checkoutId=' . $ik_cashbox_id;
+
+        $ikHeaders = [];
+        $ikHeaders[] = "Authorization: Basic " . base64_encode("$username:$password");
+
+        $businessAcc = $this->getIkBusinessAcc($username, $password);
+        if (!empty($businessAcc)) {
+            $ikHeaders[] = "Ik-Api-Account-Id: " . $businessAcc;
+        }
+
         // Create a stream
         $opts = array(
             'http' => array(
@@ -223,22 +247,33 @@ class ControllerExtensionPaymentInterkassa extends Controller
                 'header' => "Authorization: Basic " . base64_encode("$username:$password")
             )
         );
-        $context = stream_context_create($opts);
-        $response = file_get_contents($remote_url, false, $context);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $remote_url);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+        curl_setopt($ch, CURLOPT_HEADER, false);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $ikHeaders);
+        $response = curl_exec($ch);
         $json_data = json_decode($response);
 
-        file_put_contents(dirname(DIR_APPLICATION). '/temp.log', json_encode(array(
-            '$remote_url' => $remote_url,
-            '$username' => $username,
-            '$password' => $password,
-            '$opts' => $opts,
-        ), JSON_PRETTY_PRINT));
+//        $context = stream_context_create($opts);
+//        $response = file_get_contents($remote_url, false, $context);
+//        $json_data = json_decode($response);
 
-        if(empty($response))
+//        file_put_contents(dirname(DIR_APPLICATION). '/temp.log', json_encode(array(
+//            '$remote_url' => $remote_url,
+//            '$username' => $username,
+//            '$password' => $password,
+//            '$opts' => $opts,
+//        ), JSON_PRETTY_PRINT));
+
+        if (empty($response))
             return '<strong style="color:red;">Error!!! System response empty!</strong>';
         if ($json_data->status != 'error') {
             $payment_systems = array();
-            if(!empty($json_data->data)){
+            if (!empty($json_data->data)) {
                 foreach ($json_data->data as $ps => $info) {
                     $payment_system = $info->ser;
                     if (!array_key_exists($payment_system, $payment_systems)) {
@@ -254,26 +289,62 @@ class ControllerExtensionPaymentInterkassa extends Controller
                 }
             }
 
-            return !empty($payment_systems)? $payment_systems : '<strong style="color:red;">API connection error or system response empty!</strong>';
+            return !empty($payment_systems) ? $payment_systems : '<strong style="color:red;">API connection error or system response empty!</strong>';
         } else {
-            if(!empty($json_data->message))
+            if (!empty($json_data->message))
                 return '<strong style="color:red;">API connection error!<br>' . $json_data->message . '</strong>';
             else
                 return '<strong style="color:red;">API connection error or system response empty!</strong>';
         }
     }
 
+    public function getIkBusinessAcc($username = '', $password = '')
+    {
+        $tmpLocationFile = __DIR__ . '/tmpLocalStorageBusinessAcc.ini';
+        $dataBusinessAcc = function_exists('file_get_contents') && file_exists($tmpLocationFile) ? file_get_contents($tmpLocationFile) : '{}';
+        $dataBusinessAcc = json_decode($dataBusinessAcc, 1);
+        $businessAcc = !empty($dataBusinessAcc['businessAcc']) && is_string($dataBusinessAcc['businessAcc']) ? trim($dataBusinessAcc['businessAcc']) : '';
+        if (empty($businessAcc) || sha1($username . $password) !== $dataBusinessAcc['hash']) {
+            $curl = curl_init();
+            curl_setopt($curl, CURLOPT_URL, self::$ikUrlAPI . 'account');
+            curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($curl, CURLOPT_FOLLOWLOCATION, false);
+            curl_setopt($curl, CURLOPT_HEADER, false);
+            curl_setopt($curl, CURLOPT_HTTPHEADER, ["Authorization: Basic " . base64_encode("$username:$password")]);
+            $response = curl_exec($curl);
+            if (!empty($response['data'])) {
+                foreach ($response['data'] as $id => $data) {
+                    if ($data['tp'] == 'b') {
+                        $businessAcc = $id;
+                        break;
+                    }
+                }
+            }
+            if (function_exists('file_put_contents')) {
+                $updData = [
+                    'businessAcc' => $businessAcc,
+                    'hash' => sha1($username . $password)
+                ];
+                file_put_contents($tmpLocationFile, json_encode($updData, JSON_PRETTY_PRINT));
+            }
+            return $businessAcc;
+        }
+        return $dataBusinessAcc['businessAcc'];
+    }
+
     public function checkIP()
     {
-        $ip_stack = array(
-            'ip_begin'=>'151.80.190.97',
-            'ip_end'=>'151.80.190.104'
-        );
-        $ip = ip2long($this->request->server['REMOTE_ADDR'])? ip2long($this->request->server['REMOTE_ADDR']) : !ip2long($this->request->server['REMOTE_ADDR']);
-        if(($ip >= ip2long($ip_stack['ip_begin'])) && ($ip <= ip2long($ip_stack['ip_end']))){
+        $this->logWrite('  server: ' . var_export($this->request->server['REMOTE_ADDR'], true), self::$LOG_FULL);
+
+        $ip_callback = ip2long($this->request->server['REMOTE_ADDR']) ? ip2long($this->request->server['REMOTE_ADDR']) : !ip2long($this->request->server['REMOTE_ADDR']);
+
+        if ($ip_callback == ip2long($this->ip_stack[0]) || $ip_callback == ip2long($this->ip_stack[1])) {
             return true;
+        } else {
+            $this->sendForbidden(sprintf($this->language->get('text_error_allowed_range_ip'), $this->request->server['REMOTE_ADDR']));
+            return false;
         }
-        return false;
     }
 
     protected function logWrite($message, $type)

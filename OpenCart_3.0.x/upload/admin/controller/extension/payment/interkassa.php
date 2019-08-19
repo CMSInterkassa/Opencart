@@ -49,7 +49,7 @@ class ControllerExtensionPaymentInterkassa extends Controller {
 
         $permission = $this->validatePermission();
         if (!$permission ) {
-            $this->error['warning'] = sprintf($this->language->get('error_permission'), $this->language->get('heading_title'));
+            $this->error['warning'][] = sprintf($this->language->get('error_permission'), $this->language->get('heading_title'));
         }
 
         if(!empty($this->session->data['success'])){
@@ -68,10 +68,12 @@ class ControllerExtensionPaymentInterkassa extends Controller {
         $data['interkassa_pending_url'] = HTTPS_CATALOG . 'index.php?route=extension/payment/interkassa/success';
         $data['interkassa_callback_url'] = HTTPS_CATALOG . 'index.php?route=extension/payment/interkassa/callback';
         $data['permission'] = $permission;
-        $data['error_warning'] = isset($this->error['warning']) ? $this->error['warning'] : '';
-        $data['error_shop_id'] = isset($this->error['error_shop_id']) ? $this->error['error_shop_id'] : '';
-        $data['error_sign_hash'] = isset($this->error['error_sign_hash']) ? $this->error['error_sign_hash'] : '';
-        $data['error_sign_test_key'] = isset($this->error['error_sign_test_key']) ? $this->error['error_sign_test_key'] : '';
+        $data['error_warning'] = isset($this->error['warning']) ? implode("<br>",$this->error['warning']) : '';
+        $data['error_cashbox_id'] = isset($this->error['error_cashbox_id']) ? $this->error['error_cashbox_id'] : '';
+        $data['error_secret_key'] = isset($this->error['error_secret_key']) ? $this->error['error_secret_key'] : '';
+        $data['error_test_key'] = isset($this->error['error_test_key']) ? $this->error['error_test_key'] : '';
+        $data['error_api_id'] = isset($this->error['error_api_id']) ? $this->error['error_api_id'] : '';
+        $data['error_api_key'] = isset($this->error['error_api_key']) ? $this->error['error_api_key'] : '';
         $data['version'] = $this->version;
         $data['log_lines'] = $this->readLastLines(DIR_LOGS . 'interkassa.log', self::MAX_LAST_LOG_LINES);
         $data['log_filename'] = self::FILE_NAME_LOG;
@@ -171,21 +173,30 @@ class ControllerExtensionPaymentInterkassa extends Controller {
 
     protected function validate() {
         if (!$this->validatePermission()) {
-            $this->error['warning'] = sprintf($this->language->get('error_permission'), $this->language->get('heading_title'));
+            $this->error['warning'][] = sprintf($this->language->get('error_permission'), $this->language->get('heading_title'));
         } else {
             if (!isset($this->request->post['payment_interkassa_cashbox_id']) || !trim($this->request->post['payment_interkassa_cashbox_id'])) {
-                $this->error['warning'].= $this->error['error_id_cashbox'] = sprintf($this->language->get('error_form'),
-                    $this->language->get('entry_id_cashbox'), $this->language->get('tab_settings'));
+                $this->error['warning'][]= $this->error['error_cashbox_id'] = sprintf($this->language->get('error_form'),
+                        $this->language->get('entry_cashbox_id'), $this->language->get('tab_settings'));
             }
-
             if (!isset($this->request->post['payment_interkassa_secret_key']) || !trim($this->request->post['payment_interkassa_secret_key'])) {
-                $this->error['warning'].= $this->error['error_secret_key'] = sprintf($this->language->get('error_form'),
-                    $this->language->get('entry_secret_key'), $this->language->get('tab_settings'));
+                $this->error['warning'][]= $this->error['error_secret_key'] = sprintf($this->language->get('error_form'),
+                        $this->language->get('entry_secret_key'), $this->language->get('tab_settings'));
+            }
+            if (!isset($this->request->post['payment_interkassa_test_key']) || !trim($this->request->post['payment_interkassa_test_key'])) {
+                $this->error['warning'][]= $this->error['error_test_key'] = sprintf($this->language->get('error_form'),
+                        $this->language->get('entry_test_key'), $this->language->get('tab_settings'));
             }
 
-            if (!isset($this->request->post['payment_interkassa_test_key']) || !trim($this->request->post['payment_interkassa_test_key'])) {
-                $this->error['warning'].= $this->error['error_test_key'] = sprintf($this->language->get('error_form'),
-                    $this->language->get('entry_test_key'), $this->language->get('tab_settings'));
+            if(!empty($this->request->post['payment_interkassa_api_enable']) && $this->request->post['payment_interkassa_api_enable'] !== null) {
+                if (!isset($this->request->post['payment_interkassa_api_id']) || !trim($this->request->post['payment_interkassa_api_id'])) {
+                    $this->error['warning'][] = $this->error['error_api_id'] = sprintf($this->language->get('error_form'),
+                        $this->language->get('entry_api_id'), $this->language->get('tab_settings'));
+                }
+                if (!isset($this->request->post['payment_interkassa_api_key']) || !trim($this->request->post['payment_interkassa_api_key'])) {
+                    $this->error['warning'][] = $this->error['error_api_key'] = sprintf($this->language->get('error_form'),
+                        $this->language->get('entry_api_key'), $this->language->get('tab_settings'));
+                }
             }
         }
 
