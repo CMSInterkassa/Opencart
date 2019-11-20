@@ -1,3 +1,4 @@
+<div id="interkassa_error" style="color: red"></div>
 <form name="payment_interkassa" id="InterkassaForm" action="javascript:selpayIK.selPaysys()" method="POST">
     <?php foreach ($formData as $key => $value) { ?>
     <input type="hidden" name="<?php echo $key; ?>" value="<?php echo $value; ?>"/>
@@ -16,5 +17,18 @@
 
 <script type="text/javascript" src="/catalog/view/javascript/interkassa.js"></script>
 <script type="text/javascript">
-    selpayIK.actForm = '<?php echo $action; ?>';
+    $("#ik_button").on('click', function () {
+        $.post('index.php?route=extension/payment/interkassa/confirm', 'flag=1', function (json) {
+            $('#interkassa_error').html('');
+            if (json != undefined) {
+                selpayIK.actForm = '<?php echo $action; ?>';
+                $('#InterkassaForm').submit();
+            } else {
+                $('#interkassa_error').html(json);
+            }
+        }).done(function () {
+            $('#ik_button').button('loading');
+        });
+        return false;
+    })
 </script>

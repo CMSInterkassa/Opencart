@@ -1,6 +1,6 @@
 <?php
 
-class ControllerExtensionPaymentInterkassa extends Controller
+class ControllerPaymentInterkassa extends Controller
 {
     private $order;
     private $log;
@@ -14,8 +14,7 @@ class ControllerExtensionPaymentInterkassa extends Controller
     public function __construct($registry)
     {
         parent::__construct($registry);
-        $this->load->language('extension/payment/interkassa');
-
+        $this->load->language('payment/interkassa');
         $this->ip_stack = array(
             '151.80.190.97',
             '35.233.69.55'
@@ -25,20 +24,20 @@ class ControllerExtensionPaymentInterkassa extends Controller
     public function index()
     {
         $this->logWrite('index', self::$LOG_SHORT);
+        $this->confirm();
         $data = array();
         $data['button_confirm'] = $this->language->get('button_confirm');
         $data['action'] = self::$ikUrlSCI;
         if ($this->config->get('interkassa_api_enable')) {
-            $data['text'] = $this->load->language('extension/payment/interkassa');
-            $data['payment_systems'] = $result = $this->getIkPaymentSystems(
+            $data['text'] = $this->load->language('payment/interkassa');
+            $data['payment_systems'] = $this->getIkPaymentSystems(
                 $this->config->get('interkassa_cashbox_id'),
                 $this->config->get('interkassa_api_id'),
                 $this->config->get('interkassa_api_key')
             );
         }
         $data['formData'] = $this->makeForm();
-        $this->logWrite($data, '  $data: ');
-        return $this->load->view('extension/payment/interkassa', $data);
+        return $this->load->view('default/template/payment/interkassa.tpl', $data);
     }
 
     public function callback()
@@ -76,7 +75,7 @@ class ControllerExtensionPaymentInterkassa extends Controller
                 } elseif ($ik_response['ik_inv_st'] == 'fail') {
                     $this->model_checkout_order->addOrderHistory($order_id, $this->config->get('interkassa_order_status_fail'));
                 }
-                return false;
+                //return false;
             } else {
                 $this->sendForbidden($this->language->get('text_error_ik_sign_hash'));
             }
@@ -88,7 +87,6 @@ class ControllerExtensionPaymentInterkassa extends Controller
         $this->logWrite('SuccessURL', self::$LOG_SHORT);
         $this->logWrite('  POST:' . var_export($this->request->post, true), self::$LOG_FULL);
         $this->logWrite('  GET:' . var_export($this->request->get, true), self::$LOG_FULL);
-
         if (!isset($this->session->data['order_id'])) {
             $this->session->data['order_id'] = $this->order['order_id']; //Добавляем в сессию номер заказа на случай, если в checkout/success на экран пользователю выводится номер заказа
         }
@@ -100,34 +98,24 @@ class ControllerExtensionPaymentInterkassa extends Controller
         $this->logWrite('FailURL', self::$LOG_SHORT);
         $this->logWrite('  POST:' . var_export($this->request->post, true), self::$LOG_FULL);
         $this->logWrite('  GET:' . var_export($this->request->get, true), self::$LOG_FULL);
-        if (!empty($this->session->data['order_id']) && $this->config->get('interkassa_order_status_confirm') && ($this->session->data['payment_method']['code'] == 'interkassa')) {
+
+        if (!empty($this->session->data['order_id']) && $this->config->get('interkassa_order_status_fail') && ($this->session->data['payment_method']['code'] == 'interkassa')) {
             $this->load->model('checkout/order');
-            $this->model_checkout_order->addOrderHistory($this->session->data['order_id'], $this->config->get('interkassa_order_status_fail'));
+            $this->model_checkout_order->addOrderHistory($this->session->data['order_id'], $this->config->get('interkassa_order_status_fail'),'fail',true);
             $this->response->redirect($this->url->link('checkout/failure', '', 'SSL'));
         }
     }
 
     public function confirm()
     {
-        $this->logWrite('confirm ' . $this->session->data['order_id'], self::$LOG_SHORT);
-
-        if ($this->request->post['flag'] == 1) {
-            $this->logWrite('order_id ' . $this->session->data['order_id'], self::$LOG_SHORT);
-            $this->logWrite('flag ', self::$LOG_SHORT);
-
-            if (!empty($this->session->data['order_id']) && $this->config->get('interkassa_order_status_confirm') && ($this->session->data['payment_method']['code'] == 'interkassa')) {
-                $this->load->model('checkout/order');
-                $this->model_checkout_order->addOrderHistory($this->session->data['order_id'], $this->config->get('interkassa_order_status_confirm'), '', true);
-                $json = '';
-            }
-        } else $json = 'error';
-        $this->response->setOutput(json_encode($json));
+        // if (!empty($this->session->data['order_id']) && $this->config->get('interkassa_order_status_confirm') && ($this->session->data['payment_method']['code'] == 'interkassa')) {
+        //     $this->load->model('checkout/order');
+        //     $this->model_checkout_order->addOrderHistory($this->session->data['order_id'], $this->config->get('interkassa_order_status_confirm'),'confirm');
+        // }
     }
 
     protected function makeForm($order_id = false)
     {
-        $this->logWrite('makeForm', self::$LOG_SHORT);
-
         $this->load->model('checkout/order');
         if (!$order_id) {
             if (isset($this->session->data['order_id'])) {
@@ -138,7 +126,6 @@ class ControllerExtensionPaymentInterkassa extends Controller
             }
         }
         $order_info = $this->model_checkout_order->getOrder($order_id);
-
         $ikCurrencyCode = $this->config->get('interkassa_currency');
         if (!$this->currency->has($ikCurrencyCode)) {
             die(sprintf('Currency code (for code: %s) not found', $ikCurrencyCode));
@@ -146,10 +133,10 @@ class ControllerExtensionPaymentInterkassa extends Controller
 
         $interkassa_payment_amount = number_format($this->currency->convert($order_info['total'], $this->config->get('config_currency'), $ikCurrencyCode), 2, '.', '');
         $interkassa_cashbox_id = $this->config->get('interkassa_cashbox_id');
-        $interkassa_success_url = HTTPS_SERVER . 'index.php?route=extension/payment/interkassa/success';
-        $interkassa_fail_url = HTTPS_SERVER . 'index.php?route=extension/payment/interkassa/fail';
-        $interkassa_pending_url = HTTPS_SERVER . 'index.php?route=extension/payment/interkassa/success';
-        $interkassa_callback_url = HTTPS_SERVER . 'index.php?route=extension/payment/interkassa/callback';
+        $interkassa_success_url = HTTPS_SERVER . 'index.php?route=payment/interkassa/success';
+        $interkassa_fail_url = HTTPS_SERVER . 'index.php?route=payment/interkassa/fail';
+        $interkassa_pending_url = HTTPS_SERVER . 'index.php?route=payment/interkassa/success';
+        $interkassa_callback_url = HTTPS_SERVER . 'index.php?route=payment/interkassa/callback';
 
         $params = array(
             'ik_am' => $interkassa_payment_amount,
@@ -173,6 +160,37 @@ class ControllerExtensionPaymentInterkassa extends Controller
 
         return $params;
     }
+
+//    protected function validate($check_sign_hash = true) {
+//        $this->load->model('checkout/order');
+//        if ((ip2long($this->request->server['REMOTE_ADDR']) < ip2long('151.80.190.97')) && (ip2long($this->request->server['REMOTE_ADDR']) > ip2long('151.80.190.104'))) {
+//            $this->sendForbidden(sprintf($this->language->get('text_error_allowed_range_ip'), $this->request->server['REMOTE_ADDR']));
+//            return false;
+//        }
+//        if ($this->request->server['REQUEST_METHOD'] != 'POST') {
+//            $this->sendForbidden($this->language->get('text_error_post'));
+//            return false;
+//        }
+//        if ($check_sign_hash && isset($sign_ik)) {
+//            $ik_sign_hash_array = $this->request->post;
+//            unset($ik_sign_hash_array['ik_sign']);
+//            ksort($ik_sign_hash_array, SORT_STRING);
+//            array_push($ik_sign_hash_array, $this->config->get('shoputils_ik_test_mode') ? $this->config->get('shoputils_ik_sign_test_key') : $this->config->get('shoputils_ik_sign_hash')); //$this->config->get('shoputils_ik_sign_hash');
+//            $ik_sign_hash_string = implode(':', $ik_sign_hash_array);
+//            $ik_sign_hash = base64_encode(md5($ik_sign_hash_string, true));
+//            if ($this->request->post['ik_sign'] != $ik_sign_hash) {
+//                $this->sendForbidden($this->language->get('text_error_ik_sign_hash'));
+//                $this->logWrite($ik_sign_hash . '=md5(' . $ik_sign_hash_string . ')', self::$LOG_SHORT);
+//                return false;
+//            }
+//        }
+//        $this->order = $this->model_checkout_order->getOrder($this->request->post['ik_pm_no']);
+//        if (!$this->order) {
+//            $this->sendForbidden(sprintf($this->language->get('text_error_order_not_found'), $this->request->post['ik_pm_no']));
+//            return false;
+//        }
+//        return true;
+//    }
 
     protected function sendForbidden($error)
     {
@@ -227,7 +245,7 @@ class ControllerExtensionPaymentInterkassa extends Controller
         array_push($dataSet, $secret_key);
         $arg = implode(':', $dataSet);
         $ik_sign = base64_encode(md5($arg, true));
-        //$this->logWrite('IkSignFormation: ' . $ik_sign . ' = '. md5( $arg ), self::$LOG_SHORT);
+        $this->logWrite('IkSignFormation: ' . $ik_sign . ' = md5(' . $arg . ')', self::$LOG_SHORT);
         return $ik_sign;
     }
 
@@ -274,6 +292,7 @@ class ControllerExtensionPaymentInterkassa extends Controller
 //            '$password' => $password,
 //            '$opts' => $opts,
 //        ), JSON_PRETTY_PRINT));
+
         if (empty($response))
             return '<strong style="color:red;">Error!!! System response empty!</strong>';
         if ($json_data->status != 'error') {
@@ -352,10 +371,26 @@ class ControllerExtensionPaymentInterkassa extends Controller
             return false;
         }
     }
+//    protected function sendOk() {
+////        $this->logWrite('OK: ' . http_build_query($this->request->post, '', ','), self::$LOG_SHORT);
+////        $this->response->addHeader('HTTP/1.1 200 OK');
+////        //header('HTTP/1.1 200 OK');
+////        echo "<html><head><title>200 OK</title></head></html>";
+////    }
 
+//    protected function _setData($values) {
+//        $this->data = array();
+//        foreach ($values as $key => $value) {
+//            if (is_int($key)) {
+//                $this->data[$value] = $this->language->get($value);
+//            } else {
+//                $this->data[$key] = $value;
+//            }
+//        }
+//    }
     protected function logWrite($message, $type)
     {
-        switch ($this->config->get('interkassa_log')) {
+        switch ($this->config->get('shoputils_ik_log')) {
             case self::$LOG_OFF:
                 return;
             case self::$LOG_SHORT:
@@ -363,9 +398,8 @@ class ControllerExtensionPaymentInterkassa extends Controller
                     return;
                 }
         }
-
         if (!$this->log) {
-            $this->log = new Log($this->config->get('interkassa_log_filename'));
+            $this->log = new Log($this->config->get('shoputils_ik_log_filename'));
         }
         $this->log->Write($message);
     }
