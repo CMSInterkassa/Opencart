@@ -74,8 +74,28 @@ class ControllerPaymentInterkassa extends Controller
                 $order_id = $this->request->post['ik_pm_no'];
                 $this->load->model('checkout/order');
                 $this->model_checkout_order->confirm($order_id, $this->config->get('interkassa_order_status_id'), $this->language->get('text_title'));
+				
+				header('HTTP/1.1 200 OK');
+				exit;
             }
         }
+		
+		$this->sendForbidden('Bad Request!!!');
+    }
+	
+	private function sendForbidden($error)
+    {
+        header('HTTP/1.1 403 Forbidden');
+
+        echo "<html>
+                <head>
+                   <title>403 Forbidden</title>
+                </head>
+                <body>
+                    <p>$error.</p>
+                </body>
+        </html>";
+		exit;
     }
 
     public function notification()
@@ -134,14 +154,19 @@ class ControllerPaymentInterkassa extends Controller
     public function checkIP()
     {
         $ip_stack = array(
-            'ip_begin' => '151.80.190.97',
-            'ip_end' => '151.80.190.104'
+            '151.80.190.97',
+            '35.233.69.55'
         );
-        if (ip2long($_SERVER['REMOTE_ADDR']) < ip2long($ip_stack['ip_begin']) || ip2long($_SERVER['REMOTE_ADDR']) > ip2long($ip_stack['ip_end'])) {
-            $this->log->write('Interkassa IP ne ok:'.$_SERVER['REMOTE_ADDR']);
+        
+		$ip = !empty($_SERVER['HTTP_CF_CONNECTING_IP'])? $_SERVER['HTTP_CF_CONNECTING_IP'] : $_SERVER['REMOTE_ADDR'];
+        $ip_callback = ip2long($ip) ? ip2long($ip) : !ip2long($ip);
+
+        if ($ip_callback == ip2long($ip_stack[0]) || $ip_callback == ip2long($ip_stack[1])) {
+            return true;
+        } else {
+			$this->log->write('Interkassa IP ne ok:'.$_SERVER['REMOTE_ADDR']);
             return false;
         }
-        return true;
     }
 
 }
